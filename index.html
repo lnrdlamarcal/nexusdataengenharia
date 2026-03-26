@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus Data — Documentação</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Marked.js -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <!-- Highlight.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { n9:'#1F3864', n6:'#2E75B6', n2:'#BDD7EE', n1:'#EDF2FA' } } }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* ── Markdown ── */
+    .md h1  { font-size:1.65em; font-weight:700; color:#1F3864; margin:.2em 0 .6em; border-bottom:2px solid #BDD7EE; padding-bottom:.3em; }
+    .md h2  { font-size:1.2em;  font-weight:700; color:#1F3864; margin:1.4em 0 .5em; }
+    .md h3  { font-size:1em;    font-weight:600; color:#2E75B6; margin:1.1em 0 .4em; }
+    .md p   { margin:.55em 0; line-height:1.8; color:#2d2d2d; }
+    .md ul,.md ol { padding-left:1.6em; margin:.5em 0; }
+    .md ul li { list-style:disc; }
+    .md ol li { list-style:decimal; }
+    .md li  { margin:.3em 0; line-height:1.7; color:#2d2d2d; }
+    .md code { background:#EDF2FA; color:#1F3864; padding:.15em .4em; border-radius:4px; font-size:.875em; font-family:'Courier New',monospace; }
+    .md pre  { background:#1a2744; border-radius:8px; padding:1.1em 1em; margin:.9em 0; overflow-x:auto; position:relative; }
+    .md pre code { background:transparent; color:#e8edf5; padding:0; font-size:.82em; }
+    .md blockquote { border-left:4px solid #2E75B6; background:#EDF2FA; padding:.7em 1em; margin:.8em 0; border-radius:0 6px 6px 0; }
+    .md blockquote p { color:#333; margin:0; }
+    .md table { width:100%; border-collapse:collapse; margin:.8em 0; font-size:.88em; }
+    .md table th { background:#1F3864; color:white; padding:.55em .9em; text-align:left; }
+    .md table td { padding:.48em .9em; border-bottom:1px solid #e5e5e5; color:#2d2d2d; }
+    .md table tr:nth-child(even) { background:#EDF2FA; }
+    .md hr   { border:none; border-top:1px solid #BDD7EE; margin:1.5em 0; }
+    .md strong { color:#1F3864; font-weight:600; }
+    .md a   { color:#2E75B6; text-decoration:underline; }
+
+    /* copy btn */
+    .copy-btn { position:absolute; top:8px; right:10px; background:#2E75B6; color:white; border:none; border-radius:4px; padding:3px 12px; font-size:11px; cursor:pointer; opacity:.85; transition:opacity .15s; }
+    .copy-btn:hover { opacity:1; }
+
+    /* sidebar active */
+    .sitem.active { background:#2E75B6 !important; color:#fff !important; }
+
+    /* spinner */
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; }
+
+    /* toast */
+    #toast { position:fixed; bottom:1.4rem; left:50%; transform:translateX(-50%); background:#1F3864; color:white; padding:.6em 1.5em; border-radius:8px; font-size:.88em; z-index:9999; display:none; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:#f0f4fb; }
+    ::-webkit-scrollbar-thumb { background:#BDD7EE; border-radius:3px; }
+  </style>
+</head>
+<body class="bg-n1 min-h-screen">
+
+<div id="app"></div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:     "AIzaSyCvi_PyfgghkBpkoE0vMKMgrF7V8bt7dBA",
+  authDomain: "nexus-755f9.firebaseapp.com",
+  projectId:  "nexus-755f9",
+  appId:      "1:131267406165:web:df1a1d4e52dfeecb9ea7dc",
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const S = {
+  user: null, userData: null,
+  etls: [], allUsers: [],
+  currentEtl: null, currentPage: 0,
+  view: 'loading',          // loading|login|register|wait|dashboard|viewer|admin
+  adminTab: 'users',        // users|etls
+  editingEtl: null, editingPageIdx: null,
+};
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function toast(msg, dur=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', dur);
+}
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const md  = s => s ? marked.parse(s, { breaks:true }) : '';
+
+function applyHighlight() {
+  document.querySelectorAll('.md pre code').forEach(el => hljs.highlightElement(el));
+  document.querySelectorAll('.md pre').forEach(pre => {
+    if (pre.querySelector('.copy-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn'; btn.textContent = 'Copiar';
+    btn.onclick = () => {
+      const code = pre.querySelector('code');
+      navigator.clipboard.writeText(code ? code.innerText : pre.innerText).then(() => {
+        btn.textContent = '✓ Copiado!';
+        setTimeout(() => btn.textContent = 'Copiar', 2000);
+      });
+    };
+    pre.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FIRESTORE OPS
+// ═══════════════════════════════════════════════
+const loadUserData    = uid  => db.collection('users').doc(uid).get().then(d => d.exists ? d.data() : null);
+const loadAllEtls     = ()   => db.collection('etls').orderBy('name').get().then(s => s.docs.map(d=>({id:d.id,...d.data()})));
+const loadAllUsers    = ()   => db.collection('users').orderBy('name').get().then(s => s.docs.map(d=>({id:d.id,...d.data()})));
+async function loadAccessibleEtls(ids) {
+  if (!ids?.length) return [];
+  const out = [];
+  for (const id of ids) { const d = await db.collection('etls').doc(id).get(); if (d.exists) out.push({id:d.id,...d.data()}); }
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+// SEED DATA — ETL DFe (conteúdo completo)
+// ═══════════════════════════════════════════════
+const SEED_DFE = {
+  name: 'ETL — Exportação de DFe',
+  description: 'Exportação de NFe e NFCe organizados por empresa, mês e situação.',
+  icon: '📄',
+  pages: [
+    {
+      id: 'visao-geral', title: '📋 Visão Geral',
+      content: `# ETL — Exportação de DFe
+
+Esta ETL exporta os arquivos de documentos fiscais eletrônicos do banco de dados e os organiza automaticamente em pastas no seu computador.
+
+---
+
+## O que ela faz?
+
+A ETL lê os arquivos fiscais diretamente do banco de dados e os salva organizados por:
+
+- **Empresa** — cada empresa fica em sua própria pasta
+- **Mês de referência** — uma pasta por mês (ex: \`2025-01\`)
+- **Situação** — Confirmadas, Canceladas ou Inutilizadas
+
+## Documentos exportados
+
+| Tipo | Formato gerado | Situações contempladas |
+|---|---|---|
+| **NFe** — Nota Fiscal Eletrônica | XML compactado (ZIP) e PDF individual | Confirmadas, Canceladas, Inutilizadas |
+| **NFCe** — Nota Fiscal de Consumidor Eletrônica | XML compactado (ZIP) | Confirmadas |
+
+## Como os arquivos ficam organizados?
+
+Após executar a ETL, os arquivos aparecem desta forma:
+
+\`\`\`
+001_NOME_EMPRESA/
+  2025-01/
+    Confirmadas/
+      NFe_Confirmadas_2025-01-01_a_2025-01-31.zip
+    Canceladas/
+      NFe_Canceladas_2025-01-01_a_2025-01-31.zip
+    Inutilizadas/
+      NFe_Inutilizadas_2025-01-01_a_2025-01-31.zip
+    Confirmadas_PDF/
+      NFe_35250100...chave....pdf
+      NFe_35250100...chave....pdf
+\`\`\`
+
+> **Dica:** Os arquivos \`.zip\` precisam ser descompactados com o **Descompactador** disponível no sistema Adaptive. Veja mais detalhes na página de Parâmetros.
+`
+    },
+    {
+      id: 'configuracao', title: '⚙️ Configuração',
+      content: `# Configuração da ETL
+
+> Esta etapa é realizada **uma única vez**, durante a implantação. Siga os passos na ordem indicada.
+
+---
+
+## Passo 1 — Abrir a ETL no sistema
+
+No sistema **Adaptive**, localize a ETL pelo nome e abra-a para edição.
+
+---
+
+## Passo 2 — Preencher o campo Script
+
+Encontre o campo chamado **Script** e cole **exatamente** o código abaixo, sem nenhuma modificação:
+
+\`\`\`csharp
+if (_LISTA_ARQUIVOS == null)
+    _LISTA_ARQUIVOS = new Dictionary<string, object>();
+
+foreach (var item in _DICIONARIO_DR)
+{
+    IDataReader dr = item.Value;
+
+    if (dr == null)
+        continue;
+
+    while (dr.Read())
+    {
+        if (dr["arquivo"] == DBNull.Value)
+            continue;
+
+        byte[] arquivo = (byte[])dr["arquivo"];
+
+        if (arquivo == null || arquivo.Length == 0)
+            continue;
+
+        string codigo = dr["codigo"] == DBNull.Value
+            ? ""
+            : dr["codigo"].ToString().Trim();
+
+        string nome = dr["nome"] == DBNull.Value
+            ? ""
+            : dr["nome"].ToString().Trim().Replace(" ", "_");
+
+        string situacao = dr["situacao"] == DBNull.Value
+            ? ""
+            : dr["situacao"].ToString().Trim();
+
+        string nomeArquivo = dr["nome_arquivo"] == DBNull.Value
+            ? ""
+            : dr["nome_arquivo"].ToString().Trim();
+
+        if (dr["data_referencia"] == DBNull.Value)
+            continue;
+
+        DateTime dataReferencia =
+            Convert.ToDateTime(dr["data_referencia"]);
+
+        string pastaEmpresa = codigo + "_" + nome;
+        string pastaMes = dataReferencia.ToString("yyyy-MM");
+
+        string caminhoFinal =
+            pastaEmpresa + "/" +
+            pastaMes + "/" +
+            situacao + "/" +
+            nomeArquivo;
+
+        _LISTA_ARQUIVOS[caminhoFinal] = (object)arquivo;
+    }
+
+    dr.Close();
+}
+\`\`\`
+
+Use o botão **Copiar** no canto superior direito do código para copiar sem erros.
+
+---
+
+## Passo 3 — Preencher o campo Assinatura
+
+Localize o campo **Assinatura** e cole o valor abaixo na íntegra:
+
+\`\`\`
+EEL2gElSRm4udzHfAOeL7hWxvO54POO/xNk8JqVRED1yb2AJqQllBVXY1FJZLlN+qNV7ycD671U/t+EHHN9J7z/VHZbegU52BGVffXF4lb9X2OGW9a41EX6ZEq7ifXMOPfSa6u9fmMWE8ZFhEcjMyDeWdA/ITz/uBnN30T/ZMjgP0CpwMg9NNMrZvuZhGWVK3rX7ZwvomWlmQArol18UkpjypuSsreL4xc5cuyQvkNmK1GO+AuIX1GXtt7XyK5JtUaf+6p7AqC+k/8Y4TqoP0KvXWb6vzzea6drYfb2PbMw3NR9gzxDnvDWMnVGFNVLK3d4tkSAkfCs1X6o0Hj4+kw==
+\`\`\`
+
+> ⚠️ **Atenção:** Copie a assinatura completa, sem espaços extras no início ou no final. Qualquer caractere a mais invalida o campo.
+
+---
+
+## Passo 4 — Salvar
+
+Após preencher os dois campos, **salve** a ETL. A configuração está concluída e a ETL estará pronta para uso.
+`
+    },
+    {
+      id: 'consultas', title: '🗄️ Consultas SQL',
+      content: `# Consultas SQL
+
+Cada consulta representa um tipo de documento que será exportado. Elas precisam ser cadastradas na ETL dentro do sistema Adaptive, uma a uma, cada uma com seu **ID único**.
+
+> **Como usar:** No sistema Adaptive, ao adicionar uma consulta à ETL, existe um campo de identificação. Cole o **ID** correspondente nesse campo e o **SQL** logo abaixo.
+
+---
+
+## 1. NFe — PDF Individual (Confirmadas)
+
+Esta consulta exporta um arquivo \`.pdf\` para cada NFe confirmada, nomeado com a chave de acesso do documento.
+
+**ID — cole no campo de identificação da consulta:**
+\`\`\`
+25B1800257FC4094A90BA3FD84AD508D
+\`\`\`
+
+**SQL — cole no campo da consulta:**
+\`\`\`sql
+WITH periodo AS (
+    SELECT
+        make_date(:ano, :mes, 1) AS data_inicial,
+        (
+            make_date(:ano, :mes, 1)
+            + INTERVAL '1 month'
+            - INTERVAL '1 day'
+        )::date AS data_final
+)
+
+SELECT
+    se.codigo,
+    se.nome,
+    'Confirmadas_PDF'                              AS situacao,
+    DATE_TRUNC('month', dfe.data_emissao)::date    AS data_referencia,
+    'NFe_' || dfe.chave_acesso_dfe || '.pdf'       AS nome_arquivo,
+    dfe.pdf                                        AS arquivo
+FROM        documento_fiscal_eletronico dfe
+            INNER JOIN nota_fiscal_saida nfs ON nfs.chave_acesso_nfe = dfe.chave_acesso_dfe
+            INNER JOIN sis_empresa        se ON se.id_empresa         = dfe.id_empresa
+            CROSS JOIN periodo             p
+WHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final
+  AND       nfs.situacao          = 1
+  AND       dfe.pdf               IS NOT NULL
+  AND       dfe.tipo_documento    = 1
+  AND       se.id_empresa         = :IdEmpresa
+ORDER BY    dfe.data_emissao;
+\`\`\`
+
+---
+
+## 2. NFe — XMLs Confirmadas (ZIP)
+
+Exporta todos os XMLs de NFe confirmadas do mês em um único arquivo \`.zip\`.
+
+**ID:**
+\`\`\`
+6E7F3773C7D745699FDC28A5BA734663
+\`\`\`
+
+**SQL:**
+\`\`\`sql
+WITH periodo AS (
+    SELECT
+        make_date(:ano, :mes, 1) AS data_inicial,
+        (
+            make_date(:ano, :mes, 1)
+            + INTERVAL '1 month'
+            - INTERVAL '1 day'
+        )::date AS data_final
+)
+
+SELECT
+    se.codigo,
+    se.nome,
+    'Confirmadas'                                                                          AS situacao,
+    DATE_TRUNC('month', dfe.data_emissao)::date                                           AS data_referencia,
+    'NFe_Confirmadas_' || to_char(p.data_inicial, 'YYYY-MM-DD')
+        || '_a_' || to_char(p.data_final, 'YYYY-MM-DD') || '.zip'                        AS nome_arquivo,
+    f_obtem_arquivo_bytea_zip_unico(array_agg(dfe.xml::text::bytea))                      AS arquivo
+FROM        documento_fiscal_eletronico dfe
+            INNER JOIN nota_fiscal_saida nfs ON nfs.chave_acesso_nfe = dfe.chave_acesso_dfe
+            INNER JOIN sis_empresa        se ON se.id_empresa         = dfe.id_empresa
+            CROSS JOIN periodo             p
+WHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final
+  AND       se.id_empresa         = :IdEmpresa
+  AND       nfs.situacao          = 1
+  AND       dfe.tipo_documento    = 1
+GROUP BY    se.codigo, se.nome, situacao, data_referencia, p.data_inicial, p.data_final;
+\`\`\`
+
+---
+
+## 3. NFe — XMLs Inutilizadas (ZIP)
+
+Exporta os XMLs de NFe inutilizadas do mês em um único arquivo \`.zip\`.
+
+**ID:**
+\`\`\`
+7941813A56964019876B78717B6F6314
+\`\`\`
+
+**SQL:**
+\`\`\`sql
+WITH periodo AS (
+    SELECT
+        make_date(:ano, :mes, 1) AS data_inicial,
+        (
+            make_date(:ano, :mes, 1)
+            + INTERVAL '1 month'
+            - INTERVAL '1 day'
+        )::date AS data_final
+)
+
+SELECT
+    se.codigo,
+    se.nome,
+    'Inutilizadas'                                                                         AS situacao,
+    DATE_TRUNC('month', dfe.data_emissao)::date                                           AS data_referencia,
+    'NFe_Inutilizadas_' || to_char(p.data_inicial, 'YYYY-MM-DD')
+        || '_a_' || to_char(p.data_final, 'YYYY-MM-DD') || '.zip'                        AS nome_arquivo,
+    f_obtem_arquivo_bytea_zip_unico(array_agg(dfe.xml::text::bytea))                      AS arquivo
+FROM        documento_fiscal_eletronico dfe
+            INNER JOIN sis_empresa se ON se.id_empresa = dfe.id_empresa
+            CROSS JOIN periodo      p
+WHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final
+  AND       dfe.tipo_documento    = 8
+  AND       se.id_empresa         = :IdEmpresa
+GROUP BY    se.codigo, se.nome, situacao, data_referencia, p.data_inicial, p.data_final;
+\`\`\`
+
+---
+
+## 4. NFe — XMLs Canceladas (ZIP)
+
+Exporta os XMLs de NFe canceladas do mês em um único arquivo \`.zip\`.
+
+**ID:**
+\`\`\`
+27B89A274A094BE4A7BE23F9462C43E2
+\`\`\`
+
+**SQL:**
+\`\`\`sql
+WITH periodo AS (
+    SELECT
+        make_date(:ano, :mes, 1) AS data_inicial,
+        (
+            make_date(:ano, :mes, 1)
+            + INTERVAL '1 month'
+            - INTERVAL '1 day'
+        )::date AS data_final
+)
+
+SELECT
+    se.codigo,
+    se.nome,
+    'Canceladas'                                                                           AS situacao,
+    DATE_TRUNC('month', dfe.data_emissao)::date                                           AS data_referencia,
+    'NFe_Canceladas_' || to_char(p.data_inicial, 'YYYY-MM-DD')
+        || '_a_' || to_char(p.data_final, 'YYYY-MM-DD') || '.zip'                        AS nome_arquivo,
+    f_obtem_arquivo_bytea_zip_unico(array_agg(dfe.xml::text::bytea))                      AS arquivo
+FROM        documento_fiscal_eletronico dfe
+            INNER JOIN nota_fiscal_saida nfs ON nfs.chave_acesso_nfe = dfe.chave_acesso_dfe
+            INNER JOIN sis_empresa        se ON se.id_empresa         = dfe.id_empresa
+            CROSS JOIN periodo             p
+WHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final
+  AND       nfs.situacao          = 2
+  AND       dfe.tipo_documento    = 7
+  AND       se.id_empresa         = :IdEmpresa
+GROUP BY    se.codigo, se.nome, situacao, data_referencia, p.data_inicial, p.data_final;
+\`\`\`
+
+---
+
+## 5. NFCe — XMLs Confirmadas (ZIP)
+
+Exporta os XMLs de NFCe confirmadas do mês em um único arquivo \`.zip\`.
+
+**ID:**
+\`\`\`
+54918F3DF85B4C3593F3F8263389DC55
+\`\`\`
+
+**SQL:**
+\`\`\`sql
+WITH periodo AS (
+    SELECT
+        make_date(:ano, :mes, 1) AS data_inicial,
+        (
+            make_date(:ano, :mes, 1)
+            + INTERVAL '1 month'
+            - INTERVAL '1 day'
+        )::date AS data_final
+)
+
+SELECT
+    se.codigo,
+    se.nome,
+    'Confirmadas'                                                                          AS situacao,
+    DATE_TRUNC('month', dfe.data_emissao)::date                                           AS data_referencia,
+    'NFCe_Confirmadas_' || to_char(p.data_inicial, 'YYYY-MM-DD')
+        || '_a_' || to_char(p.data_final, 'YYYY-MM-DD') || '.zip'                        AS nome_arquivo,
+    f_obtem_arquivo_bytea_zip_unico(array_agg(dfe.xml::text::bytea))                      AS arquivo
+FROM        documento_fiscal_eletronico dfe
+            INNER JOIN nota_fiscal_saida nfs ON nfs.chave_acesso_nfe = dfe.chave_acesso_dfe
+            INNER JOIN sis_empresa        se ON se.id_empresa         = dfe.id_empresa
+            CROSS JOIN periodo             p
+WHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final
+  AND       nfs.situacao          = 1
+  AND       dfe.tipo_documento    = 5
+  AND       se.id_empresa         = :IdEmpresa
+GROUP BY    se.codigo, se.nome, situacao, data_referencia, p.data_inicial, p.data_final;
+\`\`\`
+
+---
+
+## Tabela de referência
+
+| \`tipo_documento\` | Documento |
+|---|---|
+| \`1\` | NFe |
+| \`5\` | NFCe |
+| \`7\` | Evento de cancelamento (NFe) |
+| \`8\` | Inutilização (NFe) |
+
+| \`nfs.situacao\` | Situação |
+|---|---|
+| \`1\` | Confirmada |
+| \`2\` | Cancelada |
+`
+    },
+    {
+      id: 'parametros', title: '🔧 Parâmetros',
+      content: `# Parâmetros
+
+## ID da Lista de Valores
+
+Ao configurar os filtros da ETL no sistema Adaptive, informe o ID abaixo no campo da **lista de valores**:
+
+\`\`\`
+245CA1310DCA400AAD487D6D5A288B6A
+\`\`\`
+
+---
+
+## Preenchendo os filtros ao executar
+
+Na tela de execução da ETL, preencha os campos conforme abaixo:
+
+| Campo | O que informar | Exemplo |
+|---|---|---|
+| **Ano** | Ano de referência da exportação | \`2025\` |
+| **Mês** | Mês de referência (número de 1 a 12) | \`1\` para Janeiro |
+| **Empresa** | Selecione a empresa na lista disponível | — |
+
+---
+
+## ⚠️ Aviso — parâmetro \`:date:\`
+
+> Caso apareça um campo chamado **\`:date:\`** na tela de filtros, **ignore-o completamente e não preencha nada nele**.
+>
+> Isso é um comportamento do sistema: ele interpreta o trecho \`::date\` que existe no SQL (um cast do banco de dados) como se fosse um parâmetro, por causa dos dois pontos. **Não é um parâmetro real** da ETL — pode deixar em branco.
+
+---
+
+## Descompactando os arquivos
+
+Os arquivos exportados no formato \`.zip\` devem ser abertos com o **Descompactador** disponível no próprio sistema Adaptive.
+
+Caso não encontre a opção, entre em contato com o suporte da Nexus Data.
+`
+    }
+  ]
+};
+
+// ═══════════════════════════════════════════════
+// RENDER ENGINE
+// ═══════════════════════════════════════════════
+function setView(v) { S.view = v; render(); }
+function render() {
+  const app = document.getElementById('app');
+  const views = { loading, login, register, wait, dashboard, viewer, admin };
+  app.innerHTML = (views[S.view] || loading)();
+  if (S.view === 'viewer') setTimeout(applyHighlight, 80);
+}
+
+// ── Loading ──────────────────────────────────
+function loading() {
+  return `<div class="flex items-center justify-center min-h-screen">
+    <div class="text-center">
+      <div class="w-10 h-10 border-4 border-n2 border-t-n6 rounded-full spin mx-auto mb-3"></div>
+      <p class="text-n9 text-sm font-medium">Carregando...</p>
+    </div>
+  </div>`;
+}
+
+// ── Login ────────────────────────────────────
+function login() {
+  return `
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+      <div class="text-center mb-7">
+        <div class="text-5xl mb-2">📄</div>
+        <h1 class="text-2xl font-bold text-n9">Nexus Data</h1>
+        <p class="text-gray-500 text-sm mt-1">Portal de Documentação</p>
+      </div>
+      <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
+          <input id="le" type="email" placeholder="seu@email.com"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+          <input id="lp" type="password" placeholder="••••••••"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6"
+            onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <button onclick="doLogin()"
+          class="w-full bg-n9 hover:bg-n6 text-white font-bold py-2.5 rounded-lg transition-colors text-sm mt-1">
+          Entrar
+        </button>
+      </div>
+      <p class="text-center text-sm text-gray-400 mt-6">
+        Não tem acesso?
+        <a href="#" onclick="setView('register')" class="text-n6 font-semibold hover:underline">Criar conta</a>
+      </p>
+    </div>
+  </div>`;
+}
+
+// ── Register ─────────────────────────────────
+function register() {
+  return `
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+      <div class="text-center mb-7">
+        <div class="text-5xl mb-2">📄</div>
+        <h1 class="text-2xl font-bold text-n9">Criar conta</h1>
+        <p class="text-gray-500 text-sm mt-1">Nexus Data — Portal de Documentação</p>
+      </div>
+      <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+          <input id="rn" type="text" placeholder="Seu nome completo"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
+          <input id="re" type="email" placeholder="seu@email.com"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+          <input id="rp" type="password" placeholder="Mínimo 6 caracteres"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6"
+            onkeydown="if(event.key==='Enter')doRegister()" />
+        </div>
+        <button onclick="doRegister()"
+          class="w-full bg-n9 hover:bg-n6 text-white font-bold py-2.5 rounded-lg transition-colors text-sm mt-1">
+          Criar conta
+        </button>
+      </div>
+      <p class="text-center text-sm text-gray-400 mt-6">
+        Já tem conta?
+        <a href="#" onclick="setView('login')" class="text-n6 font-semibold hover:underline">Entrar</a>
+      </p>
+    </div>
+  </div>`;
+}
+
+// ── Aguardando liberação ──────────────────────
+function wait() {
+  return `
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 text-center">
+      <div class="text-6xl mb-4">⏳</div>
+      <h2 class="text-xl font-bold text-n9 mb-2">Aguardando liberação</h2>
+      <p class="text-gray-500 text-sm leading-relaxed">
+        Sua conta foi criada! Assim que o administrador liberar o seu acesso, você poderá visualizar as documentações.
+      </p>
+      <button onclick="doLogout()"
+        class="mt-7 text-sm text-n6 border border-n2 px-5 py-2 rounded-lg hover:bg-n1 transition-colors">
+        Sair
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── Dashboard ────────────────────────────────
+function dashboard() {
+  const { userData, etls } = S;
+  return `
+  <div class="min-h-screen flex flex-col bg-n1">
+    <header class="bg-n9 text-white px-6 py-4 flex items-center justify-between shadow">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">📄</span>
+        <div>
+          <div class="font-bold leading-tight">Nexus Data</div>
+          <div class="text-n2 text-xs">Portal de Documentação</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        ${userData?.isAdmin ? `<button onclick="openAdmin()"
+          class="text-xs bg-n6 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors font-medium">
+          ⚙️ Admin
+        </button>` : ''}
+        <div class="text-right">
+          <div class="text-sm font-semibold">${esc(userData?.name || '')}</div>
+          <button onclick="doLogout()" class="text-n2 text-xs hover:text-white transition-colors">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
+      <h2 class="text-lg font-bold text-n9 mb-5">Minhas documentações</h2>
+      ${etls.length === 0
+        ? `<div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+            <div class="text-5xl mb-4">📭</div>
+            <p class="text-sm">Nenhuma documentação disponível ainda.</p>
+           </div>`
+        : `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${etls.map((e,i) => `
+              <div onclick="openEtl(${i})"
+                class="bg-white rounded-xl border border-gray-200 hover:border-n6 hover:shadow-lg p-5 cursor-pointer transition-all group">
+                <div class="text-3xl mb-3">${esc(e.icon||'📄')}</div>
+                <h3 class="font-bold text-n9 text-sm group-hover:text-n6 transition-colors leading-snug">${esc(e.name)}</h3>
+                <p class="text-gray-500 text-xs mt-1.5 leading-relaxed">${esc(e.description||'')}</p>
+                <div class="mt-4 text-xs text-n6 font-semibold">Ver documentação →</div>
+              </div>`).join('')}
+           </div>`}
+    </main>
+  </div>`;
+}
+
+// ── Viewer ───────────────────────────────────
+function viewer() {
+  const { currentEtl: e, currentPage: pi, userData } = S;
+  const pages = e?.pages || [];
+  const page  = pages[pi];
+  return `
+  <div class="flex flex-col h-screen overflow-hidden bg-white">
+    <header class="bg-n9 text-white px-4 py-3 flex items-center gap-3 shrink-0 shadow z-20">
+      <button onclick="backToDashboard()" class="hover:text-n2 text-sm font-medium transition-colors">← Voltar</button>
+      <div class="w-px h-4 bg-n6"></div>
+      <span class="text-sm font-semibold truncate">${esc(e?.icon||'📄')} ${esc(e?.name||'')}</span>
+      <div class="ml-auto flex items-center gap-3">
+        ${userData?.isAdmin ? `<button onclick="openAdmin()" class="text-xs bg-n6 hover:bg-blue-700 px-3 py-1.5 rounded-lg font-medium">⚙️ Admin</button>` : ''}
+        <button onclick="doLogout()" class="text-n2 text-xs hover:text-white transition-colors">Sair</button>
+      </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="w-52 bg-n9 shrink-0 overflow-y-auto py-4 px-2 flex flex-col gap-0.5">
+        <p class="text-n2 text-xs font-bold uppercase tracking-wider px-3 mb-2">Conteúdo</p>
+        ${pages.map((p,i) => `
+          <button onclick="goToPage(${i})"
+            class="sitem w-full text-left text-xs px-3 py-2.5 rounded-lg text-n2 hover:bg-n6 hover:text-white transition-colors ${i===pi?'active':''}">
+            ${esc(p.title)}
+          </button>`).join('')}
+      </aside>
+
+      <!-- Content -->
+      <main class="flex-1 overflow-y-auto">
+        <div class="max-w-3xl mx-auto px-8 py-7">
+          <div class="md">${page ? md(page.content) : '<p class="text-gray-400">Página não encontrada.</p>'}</div>
+        </div>
+      </main>
+    </div>
+  </div>`;
+}
+
+// ── Admin ─────────────────────────────────────
+function admin() {
+  return `
+  <div class="min-h-screen flex flex-col bg-n1">
+    <header class="bg-n9 text-white px-6 py-4 flex items-center gap-3 shadow">
+      <button onclick="backToDashboard()" class="hover:text-n2 text-sm font-medium transition-colors">← Voltar</button>
+      <div class="w-px h-4 bg-n6"></div>
+      <span class="font-bold">⚙️ Painel Admin</span>
+    </header>
+    <div class="bg-white border-b border-gray-200 px-6 flex">
+      ${['users','etls'].map(t => `
+        <button onclick="setAdminTab('${t}')"
+          class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors
+            ${S.adminTab===t ? 'border-n6 text-n6' : 'border-transparent text-gray-500 hover:text-n9'}">
+          ${t==='users' ? '👥 Usuários' : '📄 ETLs'}
+        </button>`).join('')}
+    </div>
+    <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
+      ${S.adminTab === 'users' ? adminUsers() : adminEtls()}
+    </main>
+  </div>`;
+}
+
+function adminUsers() {
+  return `
+  <div>
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-n9">Usuários cadastrados</h2>
+      <span class="text-sm text-gray-400">${S.allUsers.length} usuário(s)</span>
+    </div>
+    ${S.allUsers.length === 0
+      ? `<p class="text-gray-400 text-sm">Nenhum usuário encontrado.</p>`
+      : `<div class="space-y-3">
+          ${S.allUsers.map(u => `
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="flex items-start gap-4 justify-between flex-wrap">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-n9 text-sm">${esc(u.name||'—')}</span>
+                    ${u.isAdmin ? `<span class="text-xs bg-n6 text-white px-2 py-0.5 rounded-full font-medium">Admin</span>` : ''}
+                  </div>
+                  <div class="text-gray-400 text-xs mt-0.5">${esc(u.email||'')}</div>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 mb-2">Acesso às ETLs</p>
+                  <div class="flex flex-wrap gap-2">
+                    ${S.etls.map(e => {
+                      const has = (u.etlAccess||[]).includes(e.id);
+                      return `<button onclick="toggleAccess('${esc(u.id)}','${esc(e.id)}')"
+                        class="text-xs px-3 py-1.5 rounded-lg border font-medium transition-all
+                          ${has ? 'bg-n9 text-white border-n9 hover:bg-red-600 hover:border-red-600'
+                                : 'bg-white text-gray-500 border-gray-300 hover:border-n6 hover:text-n9'}">
+                        ${has ? '✓ ' : '+ '}${esc(e.name)}
+                      </button>`;
+                    }).join('')}
+                    ${S.etls.length === 0 ? `<span class="text-xs text-gray-400 italic">Nenhuma ETL cadastrada</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>`).join('')}
+         </div>`}
+  </div>`;
+}
+
+function adminEtls() {
+  if (S.editingEtl && S.editingPageIdx !== null) return pageEditor();
+  if (S.editingEtl && S.editingPageIdx === null) return etlMetaEditor();
+  return `
+  <div>
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-n9">ETLs cadastradas</h2>
+      <div class="flex gap-2">
+        <button onclick="seedDfe()"
+          class="text-xs border border-n6 text-n6 hover:bg-n6 hover:text-white px-3 py-2 rounded-lg transition-colors font-semibold">
+          ⚡ Seed ETL DFe
+        </button>
+        <button onclick="newEtl()"
+          class="text-xs bg-n9 hover:bg-n6 text-white px-3 py-2 rounded-lg transition-colors font-semibold">
+          + Nova ETL
+        </button>
+      </div>
+    </div>
+    ${S.etls.length === 0
+      ? `<div class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-400">
+           <div class="text-4xl mb-3">📭</div>
+           <p class="text-sm">Nenhuma ETL cadastrada.<br>Use o botão <strong>Seed ETL DFe</strong> para criar a primeira automaticamente.</p>
+         </div>`
+      : `<div class="space-y-3">
+          ${S.etls.map(e => `
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="flex items-start gap-3 justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">${esc(e.icon||'📄')}</span>
+                  <div>
+                    <div class="font-bold text-n9 text-sm">${esc(e.name)}</div>
+                    <div class="text-gray-400 text-xs">${esc(e.description||'')} · ${(e.pages||[]).length} página(s)</div>
+                  </div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                  <button onclick="editEtl('${esc(e.id)}')"
+                    class="text-xs border border-gray-200 text-n9 hover:border-n6 hover:text-n6 px-3 py-1.5 rounded-lg transition-colors">
+                    ✏️ Editar
+                  </button>
+                  <button onclick="deleteEtl('${esc(e.id)}')"
+                    class="text-xs border border-red-200 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs font-semibold text-gray-400 mb-2">Páginas</p>
+                <div class="flex flex-wrap gap-2">
+                  ${(e.pages||[]).map((p,pi) => `
+                    <button onclick="editPage('${esc(e.id)}',${pi})"
+                      class="text-xs border border-gray-200 text-gray-500 hover:border-n6 hover:text-n6 px-2.5 py-1 rounded-lg transition-colors">
+                      ${esc(p.title)}
+                    </button>`).join('')}
+                  <button onclick="addPage('${esc(e.id)}')"
+                    class="text-xs border border-dashed border-n6 text-n6 hover:bg-n1 px-2.5 py-1 rounded-lg transition-colors">
+                    + Página
+                  </button>
+                </div>
+              </div>
+            </div>`).join('')}
+         </div>`}
+  </div>`;
+}
+
+function etlMetaEditor() {
+  const e = S.editingEtl, isNew = !e.id;
+  return `
+  <div class="max-w-lg">
+    <div class="flex items-center gap-3 mb-5">
+      <button onclick="cancelEdit()" class="text-sm text-n6 hover:underline">← Voltar</button>
+      <h2 class="text-lg font-bold text-n9">${isNew ? 'Nova ETL' : 'Editar ETL'}</h2>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Ícone (emoji)</label>
+        <input id="ei" value="${esc(e.icon||'📄')}"
+          class="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+        <input id="en" value="${esc(e.name||'')}"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição curta</label>
+        <input id="ed" value="${esc(e.description||'')}"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button onclick="saveEtlMeta()"
+          class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">Salvar</button>
+        <button onclick="cancelEdit()" class="text-sm text-gray-500 hover:text-n9 px-3 py-2">Cancelar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function pageEditor() {
+  const e = S.editingEtl;
+  const isNew = S.editingPageIdx === 'new';
+  const page  = isNew ? {title:'',content:''} : (e.pages||[])[S.editingPageIdx] || {title:'',content:''};
+  return `
+  <div>
+    <div class="flex items-center gap-3 mb-4">
+      <button onclick="cancelEdit()" class="text-sm text-n6 hover:underline">← Voltar</button>
+      <h2 class="text-lg font-bold text-n9">${isNew ? 'Nova página' : 'Editar página'} — ${esc(e.name)}</h2>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
+        <input id="pt" value="${esc(page.title||'')}"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Conteúdo (Markdown)</label>
+        <textarea id="pc" rows="22"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-n6 resize-y"
+          style="min-height:280px">${esc(page.content||'')}</textarea>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <button onclick="savePage()"
+          class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">Salvar página</button>
+        ${!isNew ? `<button onclick="deletePage()"
+          class="border border-red-200 text-red-500 hover:bg-red-500 hover:text-white text-sm px-4 py-2 rounded-lg transition-colors">Excluir</button>` : ''}
+        <button onclick="cancelEdit()" class="text-sm text-gray-500 hover:text-n9 px-3 py-2">Cancelar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════
+function showErr(id, msg) {
+  const el = document.getElementById(id||'err');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function doLogin() {
+  const e = document.getElementById('le').value.trim();
+  const p = document.getElementById('lp').value;
+  try { await auth.signInWithEmailAndPassword(e, p); }
+  catch(err) { showErr('err', firebaseErr(err.code)); }
+}
+
+async function doRegister() {
+  const n = document.getElementById('rn').value.trim();
+  const e = document.getElementById('re').value.trim();
+  const p = document.getElementById('rp').value;
+  if (!n) { showErr('err','Informe seu nome.'); return; }
+  try {
+    const snap   = await db.collection('users').limit(1).get();
+    const isFirst = snap.empty;
+    const cred   = await auth.createUserWithEmailAndPassword(e, p);
+    await db.collection('users').doc(cred.user.uid).set({
+      name:n, email:e, isAdmin:isFirst, etlAccess:[],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(err) { showErr('err', firebaseErr(err.code)); }
+}
+
+function doLogout() { auth.signOut(); }
+
+function openEtl(i) { S.currentEtl = S.etls[i]; S.currentPage = 0; setView('viewer'); }
+
+function goToPage(i) { S.currentPage = i; render(); setTimeout(applyHighlight,80); }
+
+function backToDashboard() {
+  S.editingEtl = null; S.editingPageIdx = null;
+  setView('dashboard');
+}
+
+async function openAdmin() {
+  setView('loading');
+  try {
+    [S.etls, S.allUsers] = await Promise.all([loadAllEtls(), loadAllUsers()]);
+    S.adminTab = 'users'; S.editingEtl = null; S.editingPageIdx = null;
+    setView('admin');
+  } catch { toast('Erro ao carregar painel.'); setView('dashboard'); }
+}
+
+function setAdminTab(t) { S.adminTab = t; S.editingEtl = null; S.editingPageIdx = null; render(); }
+
+async function toggleAccess(uid, etlId) {
+  const u = S.allUsers.find(x => x.id === uid); if (!u) return;
+  const cur = u.etlAccess||[], has = cur.includes(etlId);
+  const next = has ? cur.filter(x=>x!==etlId) : [...cur, etlId];
+  try {
+    await db.collection('users').doc(uid).update({ etlAccess: next });
+    u.etlAccess = next; render(); toast(has ? 'Acesso removido.' : 'Acesso concedido!');
+  } catch { toast('Erro ao atualizar acesso.'); }
+}
+
+function newEtl()  { S.editingEtl = {icon:'📄',name:'',description:'',pages:[]}; S.editingPageIdx = null; render(); }
+function cancelEdit() { S.editingEtl = null; S.editingPageIdx = null; render(); }
+
+function editEtl(id) {
+  const e = S.etls.find(x=>x.id===id); if (!e) return;
+  S.editingEtl = JSON.parse(JSON.stringify(e)); S.editingPageIdx = null; render();
+}
+function editPage(id, pi) {
+  const e = S.etls.find(x=>x.id===id); if (!e) return;
+  S.editingEtl = JSON.parse(JSON.stringify(e)); S.editingPageIdx = pi; render();
+}
+function addPage(id) {
+  const e = S.etls.find(x=>x.id===id); if (!e) return;
+  S.editingEtl = JSON.parse(JSON.stringify(e)); S.editingPageIdx = 'new'; render();
+}
+
+async function saveEtlMeta() {
+  const icon = document.getElementById('ei').value.trim()||'📄';
+  const name = document.getElementById('en').value.trim();
+  const desc = document.getElementById('ed').value.trim();
+  if (!name) { toast('Informe o nome da ETL.'); return; }
+  try {
+    if (S.editingEtl.id) {
+      await db.collection('etls').doc(S.editingEtl.id).update({ icon,name,description:desc });
+      Object.assign(S.etls.find(x=>x.id===S.editingEtl.id)||{}, {icon,name,description:desc});
+    } else {
+      const ref = await db.collection('etls').add({
+        icon,name,description:desc,pages:[],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      S.etls.push({id:ref.id,icon,name,description:desc,pages:[]});
+    }
+    S.editingEtl = null; toast('ETL salva!'); render();
+  } catch(e) { toast('Erro ao salvar ETL.'); console.error(e); }
+}
+
+async function savePage() {
+  const title   = document.getElementById('pt').value.trim();
+  const content = document.getElementById('pc').value;
+  if (!title) { toast('Informe o título da página.'); return; }
+  const pages = [...(S.editingEtl.pages||[])];
+  if (S.editingPageIdx === 'new') {
+    pages.push({ id:'p'+Date.now(), title, content });
+  } else {
+    pages[S.editingPageIdx] = { ...(pages[S.editingPageIdx]||{}), title, content };
+  }
+  try {
+    await db.collection('etls').doc(S.editingEtl.id).update({ pages });
+    const idx = S.etls.findIndex(x=>x.id===S.editingEtl.id);
+    if (idx>=0) S.etls[idx].pages = pages;
+    S.editingEtl.pages = pages; S.editingPageIdx = null;
+    toast('Página salva!'); render();
+  } catch(e) { toast('Erro ao salvar página.'); console.error(e); }
+}
+
+async function deletePage() {
+  if (!confirm('Excluir esta página?')) return;
+  const pages = [...(S.editingEtl.pages||[])];
+  pages.splice(S.editingPageIdx, 1);
+  try {
+    await db.collection('etls').doc(S.editingEtl.id).update({ pages });
+    const idx = S.etls.findIndex(x=>x.id===S.editingEtl.id);
+    if (idx>=0) S.etls[idx].pages = pages;
+    S.editingEtl.pages = pages; S.editingPageIdx = null;
+    toast('Página excluída.'); render();
+  } catch(e) { toast('Erro ao excluir página.'); }
+}
+
+async function deleteEtl(id) {
+  if (!confirm('Excluir esta ETL e todas as suas páginas?')) return;
+  try {
+    await db.collection('etls').doc(id).delete();
+    S.etls = S.etls.filter(x=>x.id!==id);
+    toast('ETL excluída.'); render();
+  } catch(e) { toast('Erro ao excluir.'); }
+}
+
+async function seedDfe() {
+  if (!confirm('Criar a ETL "DFe" com todas as páginas e conteúdo pré-preenchidos?')) return;
+  try {
+    const ref = await db.collection('etls').add({
+      ...SEED_DFE, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    S.etls.push({ id:ref.id, ...SEED_DFE });
+    toast('ETL DFe criada com sucesso!'); render();
+  } catch(e) { toast('Erro ao criar ETL.'); console.error(e); }
+}
+
+// ═══════════════════════════════════════════════
+// ERROR MAP
+// ═══════════════════════════════════════════════
+function firebaseErr(code) {
+  return ({
+    'auth/invalid-email':        'E-mail inválido.',
+    'auth/user-not-found':       'Usuário não encontrado.',
+    'auth/wrong-password':       'Senha incorreta.',
+    'auth/invalid-credential':   'E-mail ou senha incorretos.',
+    'auth/email-already-in-use': 'Este e-mail já está em uso.',
+    'auth/weak-password':        'Senha muito curta. Mínimo 6 caracteres.',
+    'auth/too-many-requests':    'Muitas tentativas. Aguarde e tente novamente.',
+  })[code] || 'Ocorreu um erro. Tente novamente.';
+}
+
+// ═══════════════════════════════════════════════
+// AUTH LISTENER
+// ═══════════════════════════════════════════════
+auth.onAuthStateChanged(async user => {
+  if (!user) { S.user = null; S.userData = null; setView('login'); return; }
+  S.user = user; setView('loading');
+  try {
+    const userData = await loadUserData(user.uid);
+    S.userData = userData;
+    if (!userData) { setView('wait'); return; }
+    S.etls = userData.isAdmin
+      ? await loadAllEtls()
+      : await loadAccessibleEtls(userData.etlAccess || []);
+    setView((!userData.isAdmin && !userData.etlAccess?.length) ? 'wait' : 'dashboard');
+  } catch(e) {
+    console.error(e); toast('Erro ao carregar dados.'); setView('login');
+  }
+});
+</script>
+</body>
+</html>
