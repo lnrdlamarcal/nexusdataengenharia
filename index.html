@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus Data Engenharia</title>
+  <meta name="description" content="Nexus Data Engenharia — ETLs, relatórios e automação de dados para o seu negócio." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { n9:'#1F3864', n6:'#2E75B6', n2:'#BDD7EE', n1:'#EDF2FA' },
+        fontFamily: { serif:['"DM Serif Display"','Georgia','serif'], sans:['"DM Sans"','system-ui','sans-serif'] }
+      }}
+    }
+  </script>
+
+  <style>
+    *, body { font-family: 'DM Sans', system-ui, sans-serif; }
+
+    /* Landing */
+    .hero-bg {
+      background: #1F3864;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(46,117,182,.45) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 10% 80%, rgba(46,117,182,.2) 0%, transparent 60%);
+    }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(189,215,238,.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(189,215,238,.07) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .service-card { border:1px solid #e2e8f0; transition:transform .2s,box-shadow .2s,border-color .2s; }
+    .service-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(31,56,100,.1); border-color:#2E75B6; }
+    .section-label { font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#2E75B6; }
+    .stat-item { border-left:3px solid #2E75B6; }
+    .lp-input:focus { outline:none; border-color:#2E75B6; box-shadow:0 0 0 3px rgba(46,117,182,.15); }
+    #lp-nav { transition:background .25s,box-shadow .25s; }
+    #lp-nav.scrolled { background:rgba(31,56,100,.97)!important; box-shadow:0 2px 20px rgba(0,0,0,.25); }
+    .reveal { opacity:0; transform:translateY(22px); transition:opacity .55s ease,transform .55s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    /* Portal */
+    .md h1  { font-size:1.65em; font-weight:700; color:#1F3864; margin:.2em 0 .6em; border-bottom:2px solid #BDD7EE; padding-bottom:.3em; }
+    .md h2  { font-size:1.2em; font-weight:700; color:#1F3864; margin:1.4em 0 .5em; }
+    .md h3  { font-size:1em; font-weight:600; color:#2E75B6; margin:1.1em 0 .4em; }
+    .md p   { margin:.55em 0; line-height:1.8; color:#2d2d2d; }
+    .md ul,.md ol { padding-left:1.6em; margin:.5em 0; }
+    .md ul li { list-style:disc; } .md ol li { list-style:decimal; }
+    .md li  { margin:.3em 0; line-height:1.7; color:#2d2d2d; }
+    .md code { background:#EDF2FA; color:#1F3864; padding:.15em .4em; border-radius:4px; font-size:.875em; font-family:'Courier New',monospace; }
+    .md pre  { background:#1a2744; border-radius:8px; padding:1.1em 1em; margin:.9em 0; overflow-x:auto; position:relative; }
+    .md pre code { background:transparent; color:#e8edf5; padding:0; font-size:.82em; }
+    .md blockquote { border-left:4px solid #2E75B6; background:#EDF2FA; padding:.7em 1em; margin:.8em 0; border-radius:0 6px 6px 0; }
+    .md blockquote p { color:#333; margin:0; }
+    .md table { width:100%; border-collapse:collapse; margin:.8em 0; font-size:.88em; }
+    .md table th { background:#1F3864; color:white; padding:.55em .9em; text-align:left; }
+    .md table td { padding:.48em .9em; border-bottom:1px solid #e5e5e5; color:#2d2d2d; }
+    .md table tr:nth-child(even) { background:#EDF2FA; }
+    .md hr { border:none; border-top:1px solid #BDD7EE; margin:1.5em 0; }
+    .md strong { color:#1F3864; font-weight:600; }
+    .md a { color:#2E75B6; text-decoration:underline; }
+    .copy-btn { position:absolute; top:8px; right:10px; background:#2E75B6; color:white; border:none; border-radius:4px; padding:3px 12px; font-size:11px; cursor:pointer; opacity:.85; transition:opacity .15s; }
+    .copy-btn:hover { opacity:1; }
+    .sitem.active { background:#2E75B6!important; color:#fff!important; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; }
+    #toast { position:fixed; bottom:1.4rem; left:50%; transform:translateX(-50%); background:#1F3864; color:white; padding:.6em 1.5em; border-radius:8px; font-size:.88em; z-index:9999; display:none; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:#f0f4fb; }
+    ::-webkit-scrollbar-thumb { background:#BDD7EE; border-radius:3px; }
+    html { scroll-behavior:smooth; }
+  </style>
+</head>
+<body class="bg-n1 min-h-screen">
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCvi_PyfgghkBpkoE0vMKMgrF7V8bt7dBA",
+  authDomain:"nexus-755f9.firebaseapp.com",
+  projectId:"nexus-755f9",
+  appId:"1:131267406165:web:df1a1d4e52dfeecb9ea7dc",
+});
+const auth=firebase.auth(), db=firebase.firestore();
+
+const S={user:null,userData:null,etls:[],allUsers:[],currentEtl:null,currentPage:0,
+  view:'landing',adminTab:'contacts',editingEtl:null,editingPageIdx:null};
+
+function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',dur);}
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const md=s=>s?marked.parse(s,{breaks:true}):'';
+
+function applyHighlight(){
+  document.querySelectorAll('.md pre code').forEach(el=>hljs.highlightElement(el));
+  document.querySelectorAll('.md pre').forEach(pre=>{
+    if(pre.querySelector('.copy-btn'))return;
+    const btn=document.createElement('button');btn.className='copy-btn';btn.textContent='Copiar';
+    btn.onclick=()=>{const c=pre.querySelector('code');navigator.clipboard.writeText(c?c.innerText:pre.innerText).then(()=>{btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='Copiar',2000);});};
+    pre.appendChild(btn);
+  });
+}
+
+const loadUserData=uid=>db.collection('users').doc(uid).get().then(d=>d.exists?d.data():null);
+const loadAllEtls=()=>db.collection('etls').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+const loadAllUsers=()=>db.collection('users').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+async function loadAccessibleEtls(ids){if(!ids?.length)return[];const out=[];for(const id of ids){const d=await db.collection('etls').doc(id).get();if(d.exists)out.push({id:d.id,...d.data()});}return out;}
+
+const SEED_DFE={name:'ETL — Exportação de DFe',description:'Exportação de NFe e NFCe organizados por empresa, mês e situação.',icon:'📄',pages:[
+  {id:'visao-geral',title:'📋 Visão Geral',content:`# ETL — Exportação de DFe\n\nEsta ETL exporta os arquivos de documentos fiscais eletrônicos do banco de dados e os organiza automaticamente em pastas no seu computador.\n\n---\n\n## O que ela faz?\n\nA ETL lê os arquivos fiscais diretamente do banco de dados e os salva organizados por:\n\n- **Empresa** — cada empresa fica em sua própria pasta\n- **Mês de referência** — uma pasta por mês (ex: \`2025-01\`)\n- **Situação** — Confirmadas, Canceladas ou Inutilizadas\n\n## Documentos exportados\n\n| Tipo | Formato | Situações |\n|---|---|---|\n| **NFe** | XML (ZIP) e PDF | Confirmadas, Canceladas, Inutilizadas |\n| **NFCe** | XML (ZIP) | Confirmadas |\n\n## Estrutura de pastas\n\n\`\`\`\n001_NOME_EMPRESA/\n  2025-01/\n    Confirmadas/\n      NFe_Confirmadas_2025-01-01_a_2025-01-31.zip\n    Canceladas/\n      NFe_Canceladas_2025-01-01_a_2025-01-31.zip\n    Confirmadas_PDF/\n      NFe_35250100...chave....pdf\n\`\`\`\n\n> Os arquivos \`.zip\` precisam ser descompactados com o **Descompactador** disponível no sistema Adaptive.`},
+  {id:'configuracao',title:'⚙️ Configuração',content:`# Configuração da ETL\n\n> Esta etapa é realizada **uma única vez**, durante a implantação.\n\n---\n\n## Passo 1 — Abrir a ETL\n\nNo sistema **Adaptive**, localize a ETL pelo nome e abra para edição.\n\n## Passo 2 — Campo Script\n\nCole **exatamente** o código abaixo:\n\n\`\`\`csharp\nif (_LISTA_ARQUIVOS == null)\n    _LISTA_ARQUIVOS = new Dictionary<string, object>();\n\nforeach (var item in _DICIONARIO_DR)\n{\n    IDataReader dr = item.Value;\n    if (dr == null) continue;\n    while (dr.Read())\n    {\n        if (dr["arquivo"] == DBNull.Value) continue;\n        byte[] arquivo = (byte[])dr["arquivo"];\n        if (arquivo == null || arquivo.Length == 0) continue;\n        string codigo = dr["codigo"] == DBNull.Value ? "" : dr["codigo"].ToString().Trim();\n        string nome = dr["nome"] == DBNull.Value ? "" : dr["nome"].ToString().Trim().Replace(" ", "_");\n        string situacao = dr["situacao"] == DBNull.Value ? "" : dr["situacao"].ToString().Trim();\n        string nomeArquivo = dr["nome_arquivo"] == DBNull.Value ? "" : dr["nome_arquivo"].ToString().Trim();\n        if (dr["data_referencia"] == DBNull.Value) continue;\n        DateTime dataReferencia = Convert.ToDateTime(dr["data_referencia"]);\n        string pastaEmpresa = codigo + "_" + nome;\n        string pastaMes = dataReferencia.ToString("yyyy-MM");\n        string caminhoFinal = pastaEmpresa + "/" + pastaMes + "/" + situacao + "/" + nomeArquivo;\n        _LISTA_ARQUIVOS[caminhoFinal] = (object)arquivo;\n    }\n    dr.Close();\n}\n\`\`\`\n\n## Passo 3 — Campo Assinatura\n\n\`\`\`\nEEL2gElSRm4udzHfAOeL7hWxvO54POO/xNk8JqVRED1yb2AJqQllBVXY1FJZLlN+qNV7ycD671U/t+EHHN9J7z/VHZbegU52BGVffXF4lb9X2OGW9a41EX6ZEq7ifXMOPfSa6u9fmMWE8ZFhEcjMyDeWdA/ITz/uBnN30T/ZMjgP0CpwMg9NNMrZvuZhGWVK3rX7ZwvomWlmQArol18UkpjypuSsreL4xc5cuyQvkNmK1GO+AuIX1GXtt7XyK5JtUaf+6p7AqC+k/8Y4TqoP0KvXWb6vzzea6drYfb2PbMw3NR9gzxDnvDWMnVGFNVLK3d4tkSAkfCs1X6o0Hj4+kw==\n\`\`\`\n\n> ⚠️ Copie a assinatura completa, sem espaços extras.\n\n## Passo 4 — Salvar\n\nApós preencher os dois campos, **salve** a ETL.`},
+  {id:'consultas',title:'🗄️ Consultas SQL',content:`# Consultas SQL\n\nCadastre cada consulta na ETL com seu **ID único**.\n\n---\n\n## 1. NFe — PDF Individual (Confirmadas)\n**ID:** \`25B1800257FC4094A90BA3FD84AD508D\`\n\n\`\`\`sql\nWITH periodo AS (\n    SELECT make_date(:ano, :mes, 1) AS data_inicial,\n        (make_date(:ano, :mes, 1) + INTERVAL '1 month' - INTERVAL '1 day')::date AS data_final\n)\nSELECT se.codigo, se.nome, 'Confirmadas_PDF' AS situacao,\n    DATE_TRUNC('month', dfe.data_emissao)::date AS data_referencia,\n    'NFe_' || dfe.chave_acesso_dfe || '.pdf' AS nome_arquivo, dfe.pdf AS arquivo\nFROM        documento_fiscal_eletronico dfe\n            INNER JOIN nota_fiscal_saida nfs ON nfs.chave_acesso_nfe = dfe.chave_acesso_dfe\n            INNER JOIN sis_empresa        se ON se.id_empresa = dfe.id_empresa\n            CROSS JOIN periodo             p\nWHERE       DATE(dfe.data_emissao) BETWEEN p.data_inicial AND p.data_final\n  AND       nfs.situacao = 1 AND dfe.pdf IS NOT NULL\n  AND       dfe.tipo_documento = 1 AND se.id_empresa = :IdEmpresa\nORDER BY    dfe.data_emissao;\n\`\`\`\n\n---\n\n## 2. NFe — XMLs Confirmadas (ZIP)\n**ID:** \`6E7F3773C7D745699FDC28A5BA734663\`\n\n---\n\n## 3. NFe — XMLs Inutilizadas (ZIP)\n**ID:** \`7941813A56964019876B78717B6F6314\`\n\n---\n\n## 4. NFe — XMLs Canceladas (ZIP)\n**ID:** \`27B89A274A094BE4A7BE23F9462C43E2\`\n\n---\n\n## 5. NFCe — XMLs Confirmadas (ZIP)\n**ID:** \`54918F3DF85B4C3593F3F8263389DC55\`\n\n---\n\n## Referência\n\n| \`tipo_documento\` | Tipo |\n|---|---|\n| \`1\` | NFe |\n| \`5\` | NFCe |\n| \`7\` | Cancelamento |\n| \`8\` | Inutilização |`},
+  {id:'parametros',title:'🔧 Parâmetros',content:`# Parâmetros\n\n## ID da Lista de Valores\n\`\`\`\n245CA1310DCA400AAD487D6D5A288B6A\n\`\`\`\n\n## Filtros na execução\n\n| Campo | O que informar |\n|---|---|\n| **Ano** | Ano de referência |\n| **Mês** | Número do mês (1–12) |\n| **Empresa** | Selecione na lista |\n\n## ⚠️ Parâmetro \`:date:\`\n\n> Caso apareça um campo **\`:date:\`**, **ignore-o completamente**. O sistema interpreta o cast \`::date\` do banco como parâmetro — não é real.\n\n## Descompactando os arquivos\n\nOs arquivos \`.zip\` devem ser abertos com o **Descompactador** disponível no sistema Adaptive.`}
+]};
+
+function setView(v){S.view=v;render();}
+function render(){
+  const app=document.getElementById('app');
+  const views={landing,loading,login,register,wait,dashboard,viewer,admin};
+  app.innerHTML=(views[S.view]||loading)();
+  if(S.view==='viewer')setTimeout(applyHighlight,80);
+  if(S.view==='landing')initLanding();
+}
+
+/* ── LANDING ─────────────────────────────────────────────────── */
+function landing(){return`
+<div class="min-h-screen bg-white">
+  <nav id="lp-nav" class="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-n6 rounded flex items-center justify-center">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="font-bold text-white text-sm tracking-wide">Nexus Data Engenharia</span>
+    </div>
+    <div class="hidden md:flex items-center gap-7">
+      <a href="#servicos" class="text-n2 hover:text-white text-sm transition-colors">Serviços</a>
+      <a href="#sobre" class="text-n2 hover:text-white text-sm transition-colors">Sobre</a>
+      <a href="#contato" class="text-n2 hover:text-white text-sm transition-colors">Contato</a>
+    </div>
+    <button onclick="setView('login')" class="text-sm font-semibold bg-white text-n9 hover:bg-n2 px-4 py-2 rounded-lg transition-colors">
+      Acessar Portal →
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero-bg hero-grid min-h-screen flex items-center relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute top-1/4 right-0 w-96 h-96 rounded-full bg-n6 opacity-10 blur-3xl translate-x-1/2"></div>
+      <div class="absolute bottom-0 left-1/4 w-72 h-72 rounded-full bg-n2 opacity-5 blur-3xl"></div>
+    </div>
+    <div class="max-w-6xl mx-auto px-6 pt-28 pb-20 w-full relative z-10">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-n2 animate-pulse"></span>
+          <span class="text-n2 text-xs font-medium tracking-wide">Engenharia de dados para postos de combustível</span>
+        </div>
+        <h1 class="font-serif text-5xl md:text-6xl text-white leading-tight mb-6">
+          Dados estruturados.<br/><span class="italic text-n2">Decisões mais inteligentes.</span>
+        </h1>
+        <p class="text-n2/80 text-lg leading-relaxed max-w-xl mb-10">
+          Desenvolvemos ETLs, relatórios e automações integradas ao sistema Adaptive,
+          transformando dados operacionais em informação confiável para a gestão do seu negócio.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="#contato" class="inline-flex items-center justify-center gap-2 bg-n6 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-xl transition-colors text-sm">
+            Solicitar orçamento
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#servicos" class="inline-flex items-center justify-center border border-white/25 hover:border-white/50 text-white font-medium px-7 py-3.5 rounded-xl transition-colors text-sm">
+            Conhecer serviços
+          </a>
+        </div>
+      </div>
+      <div class="mt-20 grid grid-cols-3 gap-6 max-w-sm">
+        ${[['ETL','Automações prontas'],['DFe','Exportação fiscal'],['SQL','Relatórios precisos']].map(([t,s])=>`
+        <div class="stat-item pl-4">
+          <div class="font-serif text-3xl text-white">${t}</div>
+          <div class="text-n2/70 text-xs mt-1">${s}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVIÇOS -->
+  <section id="servicos" class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="mb-14 reveal">
+        <p class="section-label mb-3">O que fazemos</p>
+        <h2 class="font-serif text-4xl text-n9 leading-tight max-w-lg">Soluções sob medida para o seu sistema</h2>
+        <p class="text-gray-500 mt-4 max-w-xl leading-relaxed">
+          Todos os serviços são desenvolvidos com foco no sistema Adaptive e banco de dados PostgreSQL, garantindo integração nativa sem adaptações.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ${[
+          ['⚙️','ETLs e Automações','Leitura, transformação e carga de dados a partir de arquivos CSV, XML e outros formatos diretamente no banco do Adaptive.'],
+          ['📊','Relatórios Gerenciais','Relatórios customizados em Stimulsoft (.lay) com análise de rentabilidade, estoque, vendas e desempenho por período e empresa.'],
+          ['📄','Exportação Fiscal (DFe)','ETL pronta para exportação de NFe e NFCe organizados por empresa, mês e situação — Confirmadas, Canceladas e Inutilizadas.'],
+          ['📩','Alertas Automáticos','Envio automático de e-mails com alertas de estoque mínimo, vencimentos e outros eventos críticos configuráveis por empresa.'],
+          ['🔗','Integração com APIs','Consultas a APIs externas como IMendes para busca de tributação e NCM, com integração via triggers no banco de dados.'],
+          ['🗂️','Portal de Documentação','Acesso privado por usuário às documentações técnicas das soluções contratadas, com controle total pelo administrador.'],
+        ].map(([icon,title,desc])=>`
+        <div class="service-card bg-white rounded-2xl p-7 reveal">
+          <div class="text-3xl mb-4">${icon}</div>
+          <h3 class="font-semibold text-n9 text-base mb-2">${title}</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">${desc}</p>
+        </div>`).join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- SOBRE -->
+  <section id="sobre" class="py-24 bg-n1">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div class="reveal">
+          <p class="section-label mb-3">Sobre a Nexus Data</p>
+          <h2 class="font-serif text-4xl text-n9 leading-tight mb-6">Especialistas em dados para o setor de combustíveis</h2>
+          <p class="text-gray-500 leading-relaxed mb-5">
+            A Nexus Data Engenharia é especializada no desenvolvimento de soluções de dados para postos de combustível,
+            com foco total no ecossistema do sistema <strong class="text-n9">Adaptive</strong> e banco de dados <strong class="text-n9">PostgreSQL</strong>.
+          </p>
+          <p class="text-gray-500 leading-relaxed mb-8">
+            Atuamos diretamente na camada de dados do seu negócio: integrações, automações, relatórios e portais de documentação
+            — tudo desenvolvido para o seu ambiente, sem soluções genéricas.
+          </p>
+          <div class="flex flex-col gap-4">
+            ${['Desenvolvimento orientado ao sistema Adaptive','Entrega com documentação técnica completa','Suporte pós-implantação','Orçamento claro e escopo bem definido'].map(i=>`
+            <div class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full bg-n6 flex items-center justify-center shrink-0 mt-0.5">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="text-gray-600 text-sm">${i}</span>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="reveal">
+          <div class="bg-n9 rounded-3xl p-8 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-48 h-48 rounded-full bg-n6 opacity-20 -translate-y-1/2 translate-x-1/2"></div>
+            <div class="relative z-10">
+              <p class="section-label text-n2 mb-5">Como trabalhamos</p>
+              <div class="space-y-6">
+                ${[['01','Levantamento','Entendemos o problema e mapeamos os dados envolvidos.'],
+                   ['02','Orçamento','Escopo bem definido com horas e valor antes de qualquer desenvolvimento.'],
+                   ['03','Desenvolvimento','Entrega incremental com validação em cada etapa.'],
+                   ['04','Implantação','Deploy no ambiente do cliente com documentação e repasse.']].map(([n,t,d])=>`
+                <div class="flex gap-4">
+                  <div class="font-serif text-n2/40 text-2xl leading-none w-8 shrink-0">${n}</div>
+                  <div>
+                    <div class="font-semibold text-sm text-white mb-0.5">${t}</div>
+                    <div class="text-n2/70 text-xs leading-relaxed">${d}</div>
+                  </div>
+                </div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTATO -->
+  <section id="contato" class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+        <div class="lg:col-span-2 reveal">
+          <p class="section-label mb-3">Fale conosco</p>
+          <h2 class="font-serif text-4xl text-n9 leading-tight mb-5">Solicite um orçamento sem compromisso</h2>
+          <p class="text-gray-500 text-sm leading-relaxed mb-8">
+            Descreva sua necessidade e retornamos com uma proposta detalhada com escopo, prazo e valor.
+          </p>
+          <div class="space-y-5">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-n1 rounded-xl flex items-center justify-center shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E75B6" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.82 19.79 19.79 0 01.04 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+              </div>
+              <div>
+                <div class="text-xs text-gray-400 font-medium">WhatsApp / Telefone</div>
+                <div class="text-n9 font-semibold text-sm">(34) 99941-6606</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-n1 rounded-xl flex items-center justify-center shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E75B6" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <div class="text-xs text-gray-400 font-medium">Localização</div>
+                <div class="text-n9 font-semibold text-sm">Uberlândia — MG · Atendimento remoto em todo o Brasil</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lg:col-span-3 reveal">
+          <div class="bg-white border border-gray-100 rounded-3xl shadow-sm p-8">
+            <div id="form-success" class="hidden bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 text-sm mb-5 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Mensagem enviada! Retornaremos em breve.
+            </div>
+            <div id="form-error" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-5"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Nome *</label>
+                <input id="c-nome" type="text" placeholder="Seu nome completo"
+                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Empresa</label>
+                <input id="c-empresa" type="text" placeholder="Nome do posto / empresa"
+                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">E-mail *</label>
+                <input id="c-email" type="email" placeholder="seu@email.com"
+                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Telefone / WhatsApp</label>
+                <input id="c-tel" type="tel" placeholder="(00) 00000-0000"
+                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tipo de solicitação *</label>
+              <select id="c-tipo" class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors">
+                <option value="">Selecione...</option>
+                <option>ETL / Automação de dados</option>
+                <option>Relatório Gerencial</option>
+                <option>Exportação Fiscal (DFe)</option>
+                <option>Alerta Automático</option>
+                <option>Integração com API</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="mb-6">
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Descreva sua necessidade *</label>
+              <textarea id="c-msg" rows="4" placeholder="Descreva o que você precisa, qual sistema utiliza e qual problema deseja resolver..."
+                class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"></textarea>
+            </div>
+            <button id="c-btn" onclick="submitContact()"
+              class="w-full bg-n9 hover:bg-n6 text-white font-bold py-3.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+              <span id="c-btn-txt">Enviar solicitação</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-n9 py-10 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 bg-n6 rounded flex items-center justify-center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <span class="text-white font-bold text-sm">Nexus Data Engenharia</span>
+      </div>
+      <p class="text-n2/50 text-xs">Uberlândia, MG — Atendimento remoto em todo o Brasil</p>
+      <button onclick="setView('login')" class="text-xs text-n2 hover:text-white border border-n2/30 hover:border-n2/60 px-4 py-2 rounded-lg transition-colors">
+        Acessar Portal →
+      </button>
+    </div>
+  </footer>
+</div>`;}
+
+function initLanding(){
+  const nav=document.getElementById('lp-nav');
+  if(nav){
+    const onScroll=()=>nav.classList.toggle('scrolled',window.scrollY>40);
+    window.addEventListener('scroll',onScroll,{passive:true});
+    onScroll();
+  }
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+  },{threshold:.1});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+
+async function submitContact(){
+  const nome=document.getElementById('c-nome').value.trim();
+  const email=document.getElementById('c-email').value.trim();
+  const tipo=document.getElementById('c-tipo').value;
+  const msg=document.getElementById('c-msg').value.trim();
+  const errEl=document.getElementById('form-error');
+  errEl.classList.add('hidden');
+  if(!nome||!email||!tipo||!msg){errEl.textContent='Preencha todos os campos obrigatórios (*).';errEl.classList.remove('hidden');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errEl.textContent='Informe um e-mail válido.';errEl.classList.remove('hidden');return;}
+  const btn=document.getElementById('c-btn'),txt=document.getElementById('c-btn-txt');
+  btn.disabled=true;txt.textContent='Enviando...';
+  try{
+    await db.collection('contacts').add({
+      nome,email,
+      empresa:document.getElementById('c-empresa').value.trim(),
+      telefone:document.getElementById('c-tel').value.trim(),
+      tipo,mensagem:msg,
+      criadoEm:firebase.firestore.FieldValue.serverTimestamp(),lido:false,
+    });
+    document.getElementById('form-success').classList.remove('hidden');
+    ['c-nome','c-empresa','c-email','c-tel','c-msg'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('c-tipo').value='';
+  }catch(e){
+    errEl.textContent='Erro ao enviar. Tente novamente ou entre em contato pelo WhatsApp.';
+    errEl.classList.remove('hidden');
+  }finally{btn.disabled=false;txt.textContent='Enviar solicitação';}
+}
+
+/* ── LOADING ─────────────────────────────────────────────────── */
+function loading(){return`<div class="flex items-center justify-center min-h-screen"><div class="text-center"><div class="w-10 h-10 border-4 border-n2 border-t-n6 rounded-full spin mx-auto mb-3"></div><p class="text-n9 text-sm font-medium">Carregando...</p></div></div>`;}
+
+/* ── LOGIN ───────────────────────────────────────────────────── */
+function login(){return`
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <button onclick="setView('landing')" class="text-gray-400 hover:text-n9 text-sm mb-6 block transition-colors">← Voltar ao site</button>
+    <div class="text-center mb-7">
+      <div class="text-5xl mb-2">📄</div>
+      <h1 class="text-2xl font-bold text-n9">Portal de Documentação</h1>
+      <p class="text-gray-500 text-sm mt-1">Nexus Data Engenharia</p>
+    </div>
+    <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
+        <input id="le" type="email" placeholder="seu@email.com" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+        <input id="lp" type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button onclick="doLogin()" class="w-full bg-n9 hover:bg-n6 text-white font-bold py-2.5 rounded-lg transition-colors text-sm">Entrar</button>
+    </div>
+    <p class="text-center text-sm text-gray-400 mt-6">
+      Não tem acesso? <a href="#" onclick="setView('register')" class="text-n6 font-semibold hover:underline">Criar conta</a>
+    </p>
+  </div>
+</div>`;}
+
+/* ── REGISTER ────────────────────────────────────────────────── */
+function register(){return`
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <button onclick="setView('login')" class="text-gray-400 hover:text-n9 text-sm mb-6 block transition-colors">← Voltar</button>
+    <div class="text-center mb-7">
+      <div class="text-5xl mb-2">📄</div>
+      <h1 class="text-2xl font-bold text-n9">Criar conta</h1>
+      <p class="text-gray-500 text-sm mt-1">Portal de Documentação — Nexus Data</p>
+    </div>
+    <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+        <input id="rn" type="text" placeholder="Seu nome completo" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
+        <input id="re" type="email" placeholder="seu@email.com" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+        <input id="rp" type="password" placeholder="Mínimo 6 caracteres" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-n6" onkeydown="if(event.key==='Enter')doRegister()" />
+      </div>
+      <button onclick="doRegister()" class="w-full bg-n9 hover:bg-n6 text-white font-bold py-2.5 rounded-lg transition-colors text-sm">Criar conta</button>
+    </div>
+  </div>
+</div>`;}
+
+/* ── WAIT ────────────────────────────────────────────────────── */
+function wait(){return`
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-n9 to-n6 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 text-center">
+    <div class="text-6xl mb-4">⏳</div>
+    <h2 class="text-xl font-bold text-n9 mb-2">Aguardando liberação</h2>
+    <p class="text-gray-500 text-sm leading-relaxed">Sua conta foi criada! Assim que o administrador liberar o seu acesso, você poderá visualizar as documentações.</p>
+    <button onclick="doLogout()" class="mt-7 text-sm text-n6 border border-n2 px-5 py-2 rounded-lg hover:bg-n1 transition-colors">Sair</button>
+  </div>
+</div>`;}
+
+/* ── DASHBOARD ───────────────────────────────────────────────── */
+function dashboard(){
+  const{userData,etls}=S;
+  return`
+<div class="min-h-screen flex flex-col bg-n1">
+  <header class="bg-n9 text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <span class="text-xl">📄</span>
+      <div><div class="font-bold leading-tight">Nexus Data</div><div class="text-n2 text-xs">Portal de Documentação</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      ${userData?.isAdmin?`<button onclick="openAdmin()" class="text-xs bg-n6 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors font-medium">⚙️ Admin</button>`:''}
+      <div class="text-right">
+        <div class="text-sm font-semibold">${esc(userData?.name||'')}</div>
+        <button onclick="doLogout()" class="text-n2 text-xs hover:text-white transition-colors">Sair</button>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
+    <h2 class="text-lg font-bold text-n9 mb-5">Minhas documentações</h2>
+    ${etls.length===0
+      ?`<div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400"><div class="text-5xl mb-4">📭</div><p class="text-sm">Nenhuma documentação disponível ainda.</p></div>`
+      :`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${etls.map((e,i)=>`
+        <div onclick="openEtl(${i})" class="bg-white rounded-xl border border-gray-200 hover:border-n6 hover:shadow-lg p-5 cursor-pointer transition-all group">
+          <div class="text-3xl mb-3">${esc(e.icon||'📄')}</div>
+          <h3 class="font-bold text-n9 text-sm group-hover:text-n6 transition-colors leading-snug">${esc(e.name)}</h3>
+          <p class="text-gray-500 text-xs mt-1.5 leading-relaxed">${esc(e.description||'')}</p>
+          <div class="mt-4 text-xs text-n6 font-semibold">Ver documentação →</div>
+        </div>`).join('')}
+       </div>`}
+  </main>
+</div>`;}
+
+/* ── VIEWER ──────────────────────────────────────────────────── */
+function viewer(){
+  const{currentEtl:e,currentPage:pi,userData}=S;
+  const pages=e?.pages||[];const page=pages[pi];
+  return`
+<div class="flex flex-col h-screen overflow-hidden bg-white">
+  <header class="bg-n9 text-white px-4 py-3 flex items-center gap-3 shrink-0 shadow z-20">
+    <button onclick="backToDashboard()" class="hover:text-n2 text-sm font-medium transition-colors">← Voltar</button>
+    <div class="w-px h-4 bg-n6"></div>
+    <span class="text-sm font-semibold truncate">${esc(e?.icon||'📄')} ${esc(e?.name||'')}</span>
+    <div class="ml-auto flex items-center gap-3">
+      ${userData?.isAdmin?`<button onclick="openAdmin()" class="text-xs bg-n6 hover:bg-blue-700 px-3 py-1.5 rounded-lg font-medium">⚙️ Admin</button>`:''}
+      <button onclick="doLogout()" class="text-n2 text-xs hover:text-white transition-colors">Sair</button>
+    </div>
+  </header>
+  <div class="flex flex-1 overflow-hidden">
+    <aside class="w-52 bg-n9 shrink-0 overflow-y-auto py-4 px-2 flex flex-col gap-0.5">
+      <p class="text-n2 text-xs font-bold uppercase tracking-wider px-3 mb-2">Conteúdo</p>
+      ${pages.map((p,i)=>`
+      <button onclick="goToPage(${i})" class="sitem w-full text-left text-xs px-3 py-2.5 rounded-lg text-n2 hover:bg-n6 hover:text-white transition-colors ${i===pi?'active':''}">
+        ${esc(p.title)}
+      </button>`).join('')}
+    </aside>
+    <main class="flex-1 overflow-y-auto">
+      <div class="max-w-3xl mx-auto px-8 py-7">
+        <div class="md">${page?md(page.content):'<p class="text-gray-400">Página não encontrada.</p>'}</div>
+      </div>
+    </main>
+  </div>
+</div>`;}
+
+/* ── ADMIN ───────────────────────────────────────────────────── */
+function admin(){return`
+<div class="min-h-screen flex flex-col bg-n1">
+  <header class="bg-n9 text-white px-6 py-4 flex items-center gap-3 shadow">
+    <button onclick="backToDashboard()" class="hover:text-n2 text-sm font-medium transition-colors">← Voltar</button>
+    <div class="w-px h-4 bg-n6"></div>
+    <span class="font-bold">⚙️ Painel Admin</span>
+  </header>
+  <div class="bg-white border-b border-gray-200 px-6 flex">
+    ${['contacts','users','etls'].map(t=>`
+    <button onclick="setAdminTab('${t}')" class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${S.adminTab===t?'border-n6 text-n6':'border-transparent text-gray-500 hover:text-n9'}">
+      ${t==='users'?'👥 Usuários':t==='etls'?'📄 ETLs':'✉️ Contatos'}
+    </button>`).join('')}
+  </div>
+  <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
+    ${S.adminTab==='users'?adminUsers():S.adminTab==='etls'?adminEtls():adminContacts()}
+  </main>
+</div>`;}
+
+function adminContacts(){return`
+<div id="contacts-section">
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="text-lg font-bold text-n9">Solicitações de contato</h2>
+    <button onclick="loadContacts()" class="text-xs border border-gray-200 text-gray-500 hover:border-n6 hover:text-n6 px-3 py-1.5 rounded-lg transition-colors">↻ Atualizar</button>
+  </div>
+  <div id="contacts-list"><div class="text-gray-400 text-sm flex items-center gap-2"><div class="w-4 h-4 border-2 border-n2 border-t-n6 rounded-full spin"></div> Carregando...</div></div>
+</div>`;}
+
+async function loadContacts(){
+  const el=document.getElementById('contacts-list');if(!el)return;
+  el.innerHTML=`<div class="text-gray-400 text-sm flex items-center gap-2"><div class="w-4 h-4 border-2 border-n2 border-t-n6 rounded-full spin"></div> Carregando...</div>`;
+  try{
+    const snap=await db.collection('contacts').orderBy('criadoEm','desc').limit(50).get();
+    const docs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(docs.length===0){el.innerHTML=`<div class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-400"><div class="text-4xl mb-3">📭</div><p class="text-sm">Nenhuma solicitação recebida ainda.</p></div>`;return;}
+    el.innerHTML=`<div class="space-y-3">${docs.map(c=>`
+    <div class="bg-white rounded-xl border ${c.lido?'border-gray-200':'border-n6'} p-5">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-n9 text-sm">${esc(c.nome)}</span>
+            ${!c.lido?`<span class="text-xs bg-n6 text-white px-2 py-0.5 rounded-full">Novo</span>`:''}
+          </div>
+          <div class="text-gray-400 text-xs">${esc(c.email)}${c.telefone?' · '+esc(c.telefone):''}${c.empresa?' · '+esc(c.empresa):''}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs bg-n1 text-n9 border border-n2 px-2.5 py-1 rounded-lg font-medium">${esc(c.tipo||'—')}</span>
+          ${!c.lido?`<button onclick="markContactRead('${esc(c.id)}')" class="text-xs text-n6 hover:underline">Marcar como lido</button>`:''}
+        </div>
+      </div>
+      <p class="text-gray-600 text-sm mt-3 leading-relaxed">${esc(c.mensagem)}</p>
+      ${c.criadoEm?`<div class="text-gray-400 text-xs mt-2">${new Date(c.criadoEm.seconds*1000).toLocaleString('pt-BR')}</div>`:''}
+    </div>`).join('')}</div>`;
+  }catch(e){el.innerHTML=`<p class="text-red-500 text-sm">Erro ao carregar contatos.</p>`;}
+}
+
+async function markContactRead(id){
+  try{await db.collection('contacts').doc(id).update({lido:true});loadContacts();}
+  catch{toast('Erro ao atualizar.');}
+}
+
+function adminUsers(){return`
+<div>
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="text-lg font-bold text-n9">Usuários cadastrados</h2>
+    <span class="text-sm text-gray-400">${S.allUsers.length} usuário(s)</span>
+  </div>
+  ${S.allUsers.length===0?`<p class="text-gray-400 text-sm">Nenhum usuário encontrado.</p>`:
+  `<div class="space-y-3">${S.allUsers.map(u=>`
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-start gap-4 justify-between flex-wrap">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-n9 text-sm">${esc(u.name||'—')}</span>
+          ${u.isAdmin?`<span class="text-xs bg-n6 text-white px-2 py-0.5 rounded-full font-medium">Admin</span>`:''}
+        </div>
+        <div class="text-gray-400 text-xs mt-0.5">${esc(u.email||'')}</div>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 mb-2">Acesso às ETLs</p>
+        <div class="flex flex-wrap gap-2">
+          ${S.etls.map(e=>{const has=(u.etlAccess||[]).includes(e.id);return`<button onclick="toggleAccess('${esc(u.id)}','${esc(e.id)}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${has?'bg-n9 text-white border-n9 hover:bg-red-600 hover:border-red-600':'bg-white text-gray-500 border-gray-300 hover:border-n6 hover:text-n9'}">${has?'✓ ':'+ '}${esc(e.name)}</button>`;}).join('')}
+          ${S.etls.length===0?`<span class="text-xs text-gray-400 italic">Nenhuma ETL cadastrada</span>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`).join('')}</div>`}
+</div>`;}
+
+function adminEtls(){
+  if(S.editingEtl&&S.editingPageIdx!==null)return pageEditor();
+  if(S.editingEtl&&S.editingPageIdx===null)return etlMetaEditor();
+  return`
+<div>
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="text-lg font-bold text-n9">ETLs cadastradas</h2>
+    <div class="flex gap-2">
+      <button onclick="seedDfe()" class="text-xs border border-n6 text-n6 hover:bg-n6 hover:text-white px-3 py-2 rounded-lg transition-colors font-semibold">⚡ Seed ETL DFe</button>
+      <button onclick="newEtl()" class="text-xs bg-n9 hover:bg-n6 text-white px-3 py-2 rounded-lg transition-colors font-semibold">+ Nova ETL</button>
+    </div>
+  </div>
+  ${S.etls.length===0
+    ?`<div class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-400"><div class="text-4xl mb-3">📭</div><p class="text-sm">Nenhuma ETL cadastrada.</p></div>`
+    :`<div class="space-y-3">${S.etls.map(e=>`
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="flex items-start gap-3 justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">${esc(e.icon||'📄')}</span>
+          <div>
+            <div class="font-bold text-n9 text-sm">${esc(e.name)}</div>
+            <div class="text-gray-400 text-xs">${esc(e.description||'')} · ${(e.pages||[]).length} página(s)</div>
+          </div>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button onclick="editEtl('${esc(e.id)}')" class="text-xs border border-gray-200 text-n9 hover:border-n6 hover:text-n6 px-3 py-1.5 rounded-lg transition-colors">✏️ Editar</button>
+          <button onclick="deleteEtl('${esc(e.id)}')" class="text-xs border border-red-200 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors">🗑️</button>
+        </div>
+      </div>
+      <div class="mt-3 pt-3 border-t border-gray-100">
+        <p class="text-xs font-semibold text-gray-400 mb-2">Páginas</p>
+        <div class="flex flex-wrap gap-2">
+          ${(e.pages||[]).map((p,pi)=>`<button onclick="editPage('${esc(e.id)}',${pi})" class="text-xs border border-gray-200 text-gray-500 hover:border-n6 hover:text-n6 px-2.5 py-1 rounded-lg transition-colors">${esc(p.title)}</button>`).join('')}
+          <button onclick="addPage('${esc(e.id)}')" class="text-xs border border-dashed border-n6 text-n6 hover:bg-n1 px-2.5 py-1 rounded-lg transition-colors">+ Página</button>
+        </div>
+      </div>
+    </div>`).join('')}</div>`}
+</div>`;}
+
+function etlMetaEditor(){
+  const e=S.editingEtl,isNew=!e.id;
+  return`
+<div class="max-w-lg">
+  <div class="flex items-center gap-3 mb-5">
+    <button onclick="cancelEdit()" class="text-sm text-n6 hover:underline">← Voltar</button>
+    <h2 class="text-lg font-bold text-n9">${isNew?'Nova ETL':'Editar ETL'}</h2>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Ícone (emoji)</label>
+      <input id="ei" value="${esc(e.icon||'📄')}" class="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+      <input id="en" value="${esc(e.name||'')}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição curta</label>
+      <input id="ed" value="${esc(e.description||'')}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+    </div>
+    <div class="flex gap-3 pt-1">
+      <button onclick="saveEtlMeta()" class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">Salvar</button>
+      <button onclick="cancelEdit()" class="text-sm text-gray-500 hover:text-n9 px-3 py-2">Cancelar</button>
+    </div>
+  </div>
+</div>`;}
+
+function pageEditor(){
+  const e=S.editingEtl;const isNew=S.editingPageIdx==='new';
+  const page=isNew?{title:'',content:''}:(e.pages||[])[S.editingPageIdx]||{title:'',content:''};
+  return`
+<div>
+  <div class="flex items-center gap-3 mb-4">
+    <button onclick="cancelEdit()" class="text-sm text-n6 hover:underline">← Voltar</button>
+    <h2 class="text-lg font-bold text-n9">${isNew?'Nova página':'Editar página'} — ${esc(e.name)}</h2>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
+      <input id="pt" value="${esc(page.title||'')}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Conteúdo (Markdown)</label>
+      <textarea id="pc" rows="22" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-n6 resize-y" style="min-height:280px">${esc(page.content||'')}</textarea>
+    </div>
+    <div class="flex gap-3 flex-wrap">
+      <button onclick="savePage()" class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">Salvar página</button>
+      ${!isNew?`<button onclick="deletePage()" class="border border-red-200 text-red-500 hover:bg-red-500 hover:text-white text-sm px-4 py-2 rounded-lg transition-colors">Excluir</button>`:''}
+      <button onclick="cancelEdit()" class="text-sm text-gray-500 hover:text-n9 px-3 py-2">Cancelar</button>
+    </div>
+  </div>
+</div>`;}
+
+/* ── ACTIONS ─────────────────────────────────────────────────── */
+function showErr(id,msg){const el=document.getElementById(id||'err');if(!el)return;el.textContent=msg;el.classList.remove('hidden');}
+
+async function doLogin(){
+  const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;
+  try{await auth.signInWithEmailAndPassword(e,p);}
+  catch(err){showErr('err',firebaseErr(err.code));}
+}
+
+async function doRegister(){
+  const n=document.getElementById('rn').value.trim(),e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;
+  if(!n){showErr('err','Informe seu nome.');return;}
+  try{
+    const snap=await db.collection('users').limit(1).get();const isFirst=snap.empty;
+    const cred=await auth.createUserWithEmailAndPassword(e,p);
+    await db.collection('users').doc(cred.user.uid).set({name:n,email:e,isAdmin:isFirst,etlAccess:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }catch(err){showErr('err',firebaseErr(err.code));}
+}
+
+function doLogout(){auth.signOut().then(()=>setView('landing'));}
+function openEtl(i){S.currentEtl=S.etls[i];S.currentPage=0;setView('viewer');}
+function goToPage(i){S.currentPage=i;render();setTimeout(applyHighlight,80);}
+function backToDashboard(){S.editingEtl=null;S.editingPageIdx=null;setView('dashboard');}
+
+async function openAdmin(){
+  setView('loading');
+  try{
+    [S.etls,S.allUsers]=await Promise.all([loadAllEtls(),loadAllUsers()]);
+    S.adminTab='contacts';S.editingEtl=null;S.editingPageIdx=null;
+    setView('admin');setTimeout(loadContacts,100);
+  }catch{toast('Erro ao carregar painel.');setView('dashboard');}
+}
+
+function setAdminTab(t){
+  S.adminTab=t;S.editingEtl=null;S.editingPageIdx=null;render();
+  if(t==='contacts')setTimeout(loadContacts,100);
+}
+
+async function toggleAccess(uid,etlId){
+  const u=S.allUsers.find(x=>x.id===uid);if(!u)return;
+  const cur=u.etlAccess||[],has=cur.includes(etlId);
+  const next=has?cur.filter(x=>x!==etlId):[...cur,etlId];
+  try{await db.collection('users').doc(uid).update({etlAccess:next});u.etlAccess=next;render();toast(has?'Acesso removido.':'Acesso concedido!');}
+  catch{toast('Erro ao atualizar acesso.');}
+}
+
+function newEtl(){S.editingEtl={icon:'📄',name:'',description:'',pages:[]};S.editingPageIdx=null;render();}
+function cancelEdit(){S.editingEtl=null;S.editingPageIdx=null;render();}
+function editEtl(id){const e=S.etls.find(x=>x.id===id);if(!e)return;S.editingEtl=JSON.parse(JSON.stringify(e));S.editingPageIdx=null;render();}
+function editPage(id,pi){const e=S.etls.find(x=>x.id===id);if(!e)return;S.editingEtl=JSON.parse(JSON.stringify(e));S.editingPageIdx=pi;render();}
+function addPage(id){const e=S.etls.find(x=>x.id===id);if(!e)return;S.editingEtl=JSON.parse(JSON.stringify(e));S.editingPageIdx='new';render();}
+
+async function saveEtlMeta(){
+  const icon=document.getElementById('ei').value.trim()||'📄';
+  const name=document.getElementById('en').value.trim();
+  const desc=document.getElementById('ed').value.trim();
+  if(!name){toast('Informe o nome da ETL.');return;}
+  try{
+    if(S.editingEtl.id){
+      await db.collection('etls').doc(S.editingEtl.id).update({icon,name,description:desc});
+      Object.assign(S.etls.find(x=>x.id===S.editingEtl.id)||{},{icon,name,description:desc});
+    }else{
+      const ref=await db.collection('etls').add({icon,name,description:desc,pages:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      S.etls.push({id:ref.id,icon,name,description:desc,pages:[]});
+    }
+    S.editingEtl=null;toast('ETL salva!');render();
+  }catch(e){toast('Erro ao salvar ETL.');}
+}
+
+async function savePage(){
+  const title=document.getElementById('pt').value.trim();
+  const content=document.getElementById('pc').value;
+  if(!title){toast('Informe o título da página.');return;}
+  const pages=[...(S.editingEtl.pages||[])];
+  if(S.editingPageIdx==='new'){pages.push({id:'p'+Date.now(),title,content});}
+  else{pages[S.editingPageIdx]={...(pages[S.editingPageIdx]||{}),title,content};}
+  try{
+    await db.collection('etls').doc(S.editingEtl.id).update({pages});
+    const idx=S.etls.findIndex(x=>x.id===S.editingEtl.id);
+    if(idx>=0)S.etls[idx].pages=pages;
+    S.editingEtl.pages=pages;S.editingPageIdx=null;toast('Página salva!');render();
+  }catch(e){toast('Erro ao salvar página.');}
+}
+
+async function deletePage(){
+  if(!confirm('Excluir esta página?'))return;
+  const pages=[...(S.editingEtl.pages||[])];pages.splice(S.editingPageIdx,1);
+  try{
+    await db.collection('etls').doc(S.editingEtl.id).update({pages});
+    const idx=S.etls.findIndex(x=>x.id===S.editingEtl.id);
+    if(idx>=0)S.etls[idx].pages=pages;
+    S.editingEtl.pages=pages;S.editingPageIdx=null;toast('Página excluída.');render();
+  }catch{toast('Erro ao excluir página.');}
+}
+
+async function deleteEtl(id){
+  if(!confirm('Excluir esta ETL?'))return;
+  try{await db.collection('etls').doc(id).delete();S.etls=S.etls.filter(x=>x.id!==id);toast('ETL excluída.');render();}
+  catch{toast('Erro ao excluir.');}
+}
+
+async function seedDfe(){
+  if(!confirm('Criar a ETL "DFe" com todas as páginas pré-preenchidas?'))return;
+  try{
+    const ref=await db.collection('etls').add({...SEED_DFE,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    S.etls.push({id:ref.id,...SEED_DFE});toast('ETL DFe criada!');render();
+  }catch(e){toast('Erro ao criar ETL.');}
+}
+
+function firebaseErr(code){
+  return({'auth/invalid-email':'E-mail inválido.','auth/user-not-found':'Usuário não encontrado.',
+    'auth/wrong-password':'Senha incorreta.','auth/invalid-credential':'E-mail ou senha incorretos.',
+    'auth/email-already-in-use':'Este e-mail já está em uso.','auth/weak-password':'Senha muito curta. Mínimo 6 caracteres.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde e tente novamente.'})[code]||'Ocorreu um erro. Tente novamente.';
+}
+
+/* ── AUTH LISTENER ───────────────────────────────────────────── */
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    S.user=null;S.userData=null;
+    if(!['login','register','landing'].includes(S.view))setView('landing');
+    return;
+  }
+  S.user=user;
+  if(['dashboard','viewer','admin'].includes(S.view))return;
+  setView('loading');
+  try{
+    const userData=await loadUserData(user.uid);S.userData=userData;
+    if(!userData){setView('wait');return;}
+    S.etls=userData.isAdmin?await loadAllEtls():await loadAccessibleEtls(userData.etlAccess||[]);
+    setView((!userData.isAdmin&&!userData.etlAccess?.length)?'wait':'dashboard');
+  }catch(e){console.error(e);toast('Erro ao carregar dados.');setView('landing');}
+});
+
+render();
+</script>
+</body>
+</html>
