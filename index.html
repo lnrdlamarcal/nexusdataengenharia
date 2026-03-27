@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nexus Data Engenharia</title>
-  <meta name="description" content="Nexus Data Engenharia — ETLs, relatórios e automação de dados para o seu negócio." />
+  <meta name="description" content="Nexus Data Engenharia — ETLs, relatórios, automações e integrações de dados sob medida para o seu negócio." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -166,13 +166,13 @@ function landing(){return`
       <div class="max-w-3xl">
         <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 mb-8">
           <span class="w-1.5 h-1.5 rounded-full bg-n2 animate-pulse"></span>
-          <span class="text-n2 text-xs font-medium tracking-wide">Engenharia de dados para postos de combustível</span>
+          <span class="text-n2 text-xs font-medium tracking-wide">Engenharia de dados para o seu negócio</span>
         </div>
         <h1 class="font-serif text-5xl md:text-6xl text-white leading-tight mb-6">
           Dados estruturados.<br/><span class="italic text-n2">Decisões mais inteligentes.</span>
         </h1>
         <p class="text-n2/80 text-lg leading-relaxed max-w-xl mb-10">
-          Desenvolvemos ETLs, relatórios e automações integradas ao sistema Adaptive,
+          Desenvolvemos ETLs, relatórios e automações sob medida,
           transformando dados operacionais em informação confiável para a gestão do seu negócio.
         </p>
         <div class="flex flex-col sm:flex-row gap-4">
@@ -202,16 +202,16 @@ function landing(){return`
         <p class="section-label mb-3">O que fazemos</p>
         <h2 class="font-serif text-4xl text-n9 leading-tight max-w-lg">Soluções sob medida para o seu sistema</h2>
         <p class="text-gray-500 mt-4 max-w-xl leading-relaxed">
-          Todos os serviços são desenvolvidos com foco no sistema Adaptive e banco de dados PostgreSQL, garantindo integração nativa sem adaptações.
+          Cada solução é desenvolvida sob medida para o ambiente e os sistemas do cliente, com foco em integração, qualidade e rastreabilidade dos dados.
         </p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         ${[
-          ['⚙️','ETLs e Automações','Leitura, transformação e carga de dados a partir de arquivos CSV, XML e outros formatos diretamente no banco do Adaptive.'],
-          ['📊','Relatórios Gerenciais','Relatórios customizados em Stimulsoft (.lay) com análise de rentabilidade, estoque, vendas e desempenho por período e empresa.'],
-          ['📄','Exportação Fiscal (DFe)','ETL pronta para exportação de NFe e NFCe organizados por empresa, mês e situação — Confirmadas, Canceladas e Inutilizadas.'],
-          ['📩','Alertas Automáticos','Envio automático de e-mails com alertas de estoque mínimo, vencimentos e outros eventos críticos configuráveis por empresa.'],
-          ['🔗','Integração com APIs','Consultas a APIs externas como IMendes para busca de tributação e NCM, com integração via triggers no banco de dados.'],
+          ['⚙️','ETLs e Automações','Leitura, transformação e carga de dados a partir de arquivos CSV, XML e outros formatos, com integração direta ao banco de dados do cliente.'],
+          ['📊','Relatórios Gerenciais','Relatórios gerenciais customizados com análise de rentabilidade, estoque, vendas e desempenho por período — entregues em PDF ou em ferramentas de BI.'],
+          ['📄','Exportação Fiscal (DFe)','Solução pronta para exportação de documentos fiscais eletrônicos (NFe e NFCe) organizados por empresa, mês e situação.'],
+          ['📩','Alertas Automáticos','Envio automático de e-mails e notificações com alertas de estoque, vencimentos, metas e outros eventos críticos configuráveis.'],
+          ['🔗','Integração com APIs','Integração com APIs externas para enriquecimento de dados, automação de consultas fiscais, tributárias e de terceiros.'],
           ['🗂️','Portal de Documentação','Acesso privado por usuário às documentações técnicas das soluções contratadas, com controle total pelo administrador.'],
         ].map(([icon,title,desc])=>`
         <div class="service-card bg-white rounded-2xl p-7 reveal">
@@ -229,17 +229,17 @@ function landing(){return`
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         <div class="reveal">
           <p class="section-label mb-3">Sobre a Nexus Data</p>
-          <h2 class="font-serif text-4xl text-n9 leading-tight mb-6">Especialistas em dados para o setor de combustíveis</h2>
+          <h2 class="font-serif text-4xl text-n9 leading-tight mb-6">Especialistas em engenharia e automação de dados</h2>
           <p class="text-gray-500 leading-relaxed mb-5">
-            A Nexus Data Engenharia é especializada no desenvolvimento de soluções de dados para postos de combustível,
-            com foco total no ecossistema do sistema <strong class="text-n9">Adaptive</strong> e banco de dados <strong class="text-n9">PostgreSQL</strong>.
+            A Nexus Data Engenharia é especializada no desenvolvimento de soluções de dados sob medida,
+            com domínio em bancos de dados relacionais, integração de sistemas e automação de processos.
           </p>
           <p class="text-gray-500 leading-relaxed mb-8">
             Atuamos diretamente na camada de dados do seu negócio: integrações, automações, relatórios e portais de documentação
             — tudo desenvolvido para o seu ambiente, sem soluções genéricas.
           </p>
           <div class="flex flex-col gap-4">
-            ${['Desenvolvimento orientado ao sistema Adaptive','Entrega com documentação técnica completa','Suporte pós-implantação','Orçamento claro e escopo bem definido'].map(i=>`
+            ${['Soluções desenvolvidas para o seu ambiente e sistemas','Entrega com documentação técnica completa','Suporte pós-implantação','Orçamento claro e escopo bem definido'].map(i=>`
             <div class="flex items-start gap-3">
               <div class="w-5 h-5 rounded-full bg-n6 flex items-center justify-center shrink-0 mt-0.5">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -319,7 +319,7 @@ function landing(){return`
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Empresa</label>
-                <input id="c-empresa" type="text" placeholder="Nome do posto / empresa"
+                <input id="c-empresa" type="text" placeholder="Nome da empresa"
                   class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
               </div>
             </div>
@@ -391,6 +391,43 @@ function initLanding(){
     entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
   },{threshold:.1});
   document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+  // ── Máscara telefone ──────────────────────────────────────────
+  const tel=document.getElementById('c-tel');
+  if(tel){
+    tel.addEventListener('input',function(e){
+      let v=this.value.replace(/\D/g,'').slice(0,11);
+      if(v.length===0){this.value='';return;}
+      if(v.length<=2)         this.value='('+v;
+      else if(v.length<=6)    this.value='('+v.slice(0,2)+') '+v.slice(2);
+      else if(v.length<=10)   this.value='('+v.slice(0,2)+') '+v.slice(2,6)+'-'+v.slice(6);
+      else                    this.value='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
+    });
+    tel.addEventListener('keydown',function(e){
+      if(e.key==='Backspace'){
+        // permite apagar normalmente
+        setTimeout(()=>{
+          let v=this.value.replace(/\D/g,'');
+          if(v.length===0)this.value='';
+        },0);
+      }
+    });
+  }
+
+  // ── Validação visual e-mail ───────────────────────────────────
+  const emailEl=document.getElementById('c-email');
+  if(emailEl){
+    emailEl.addEventListener('blur',function(){
+      const valid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());
+      if(this.value.trim()===''){ this.style.borderColor=''; return; }
+      this.style.borderColor = valid ? '#16a34a' : '#ef4444';
+      this.style.boxShadow   = valid ? '0 0 0 3px rgba(22,163,74,.12)' : '0 0 0 3px rgba(239,68,68,.12)';
+    });
+    emailEl.addEventListener('focus',function(){
+      this.style.borderColor='#2E75B6';
+      this.style.boxShadow='0 0 0 3px rgba(46,117,182,.15)';
+    });
+  }
 }
 
 async function submitContact(){
