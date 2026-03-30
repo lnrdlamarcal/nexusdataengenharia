@@ -767,9 +767,19 @@ async function doRegister(){
   const n=document.getElementById('rn').value.trim(),e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;
   if(!n){showErr('err','Informe seu nome.');return;}
   try{
-    const snap=await db.collection('users').limit(1).get();const isFirst=snap.empty;
-    const cred=await auth.createUserWithEmailAndPassword(e,p);
-    await db.collection('users').doc(cred.user.uid).set({name:n,email:e,isAdmin:isFirst,etlAccess:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    // Se a leitura falhar por falta de permissão, assume que é o primeiro usuário
+    let isFirst = false;
+    try{
+      const snap = await db.collection('users').limit(1).get();
+      isFirst = snap.empty;
+    }catch{
+      isFirst = true;
+    }
+    const cred = await auth.createUserWithEmailAndPassword(e,p);
+    await db.collection('users').doc(cred.user.uid).set({
+      name:n, email:e, isAdmin:isFirst, etlAccess:[],
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
   }catch(err){showErr('err',firebaseErr(err.code));}
 }
 
