@@ -14,7 +14,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -75,9 +74,6 @@
     .copy-btn { position:absolute; top:8px; right:10px; background:#2E75B6; color:white; border:none; border-radius:4px; padding:3px 12px; font-size:11px; cursor:pointer; opacity:.85; transition:opacity .15s; }
     .copy-btn:hover { opacity:1; }
     .sitem.active { background:#2E75B6!important; color:#fff!important; }
-    /* Upload progress */
-    .progress-bar { height:6px; background:#e5e5e5; border-radius:3px; overflow:hidden; }
-    .progress-fill { height:100%; background:#2E75B6; border-radius:3px; transition:width .2s; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .spin { animation:spin .8s linear infinite; }
     #toast { position:fixed; bottom:1.4rem; left:50%; transform:translateX(-50%); background:#1F3864; color:white; padding:.6em 1.5em; border-radius:8px; font-size:.88em; z-index:9999; display:none; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
@@ -92,15 +88,15 @@
 <div id="toast"></div>
 <script>
 firebase.initializeApp(FIREBASE_CONFIG);
-const auth    = firebase.auth();
-const db      = firebase.firestore();
-const storage = firebase.storage();
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
 const S = {
   user:null, userData:null, etls:[], relatorios:[], allUsers:[],
   currentEtl:null, currentPage:0,
   view:'landing', adminTab:'contacts',
-  editingEtl:null, editingPageIdx:null
+  editingEtl:null, editingPageIdx:null,
+  editingRelatorio:null
 };
 
 function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',dur);}
@@ -118,14 +114,19 @@ function applyHighlight(){
 }
 
 // ── Firestore ops ─────────────────────────────────────────────
-const loadUserData    = uid => db.collection('users').doc(uid).get().then(d=>d.exists?d.data():null);
-const loadAllEtls     = ()  => db.collection('etls').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
-const loadAllUsers    = ()  => db.collection('users').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
-const loadAllRelatorios = () => db.collection('relatorios').orderBy('uploadedAt','desc').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+const loadUserData          = uid => db.collection('users').doc(uid).get().then(d=>d.exists?d.data():null);
+const loadAllEtls           = ()  => db.collection('etls').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+const loadAllUsers          = ()  => db.collection('users').orderBy('name').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+const loadAllRelatorios     = ()  => db.collection('relatorios').orderBy('criadoEm','desc').get().then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
 async function loadAccessibleEtls(ids){if(!ids?.length)return[];const out=[];for(const id of ids){const d=await db.collection('etls').doc(id).get();if(d.exists)out.push({id:d.id,...d.data()});}return out;}
 async function loadAccessibleRelatorios(ids){if(!ids?.length)return[];const out=[];for(const id of ids){const d=await db.collection('relatorios').doc(id).get();if(d.exists)out.push({id:d.id,...d.data()});}return out;}
 
-function fmtBytes(b){if(!b)return'';if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
+// Converte link de compartilhamento do Google Drive para link direto de download
+function normalizeDriveUrl(url){
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m)return`https://drive.google.com/uc?export=download&id=${m[1]}`;
+  return url;
+}
 
 const SEED_DFE={name:'ETL — Exportação de DFe',description:'Exportação de NFe e NFCe organizados por empresa, mês e situação.',icon:'📄',pages:[
   {id:'visao-geral',title:'📋 Visão Geral',content:`# ETL — Exportação de DFe\n\nEsta ETL exporta os arquivos de documentos fiscais eletrônicos do banco de dados e os organiza automaticamente em pastas no seu computador.\n\n---\n\n## O que ela faz?\n\nA ETL lê os arquivos fiscais diretamente do banco de dados e os salva organizados por:\n\n- **Empresa** — cada empresa fica em sua própria pasta\n- **Mês de referência** — uma pasta por mês (ex: \`2025-01\`)\n- **Situação** — Confirmadas, Canceladas ou Inutilizadas\n\n## Documentos exportados\n\n| Tipo | Formato | Situações |\n|---|---|---|\n| **NFe** | XML (ZIP) e PDF | Confirmadas, Canceladas, Inutilizadas |\n| **NFCe** | XML (ZIP) | Confirmadas |\n\n## Estrutura de pastas\n\n\`\`\`\n001_NOME_EMPRESA/\n  2025-01/\n    Confirmadas/\n      NFe_Confirmadas_2025-01-01_a_2025-01-31.zip\n    Canceladas/\n      NFe_Canceladas_2025-01-01_a_2025-01-31.zip\n    Confirmadas_PDF/\n      NFe_35250100...chave....pdf\n\`\`\`\n\n> Os arquivos \`.zip\` precisam ser descompactados com o **Descompactador** disponível no sistema Adaptive.`},
@@ -270,7 +271,10 @@ function initLanding(){
   const tel=document.getElementById('c-tel');
   if(tel){tel.addEventListener('input',function(){let v=this.value.replace(/\D/g,'').slice(0,11);if(v.length===0){this.value='';return;}if(v.length<=2)this.value='('+v;else if(v.length<=6)this.value='('+v.slice(0,2)+') '+v.slice(2);else if(v.length<=10)this.value='('+v.slice(0,2)+') '+v.slice(2,6)+'-'+v.slice(6);else this.value='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);});}
   const emailEl=document.getElementById('c-email');
-  if(emailEl){emailEl.addEventListener('blur',function(){const valid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());if(this.value.trim()===''){this.style.borderColor='';return;}this.style.borderColor=valid?'#16a34a':'#ef4444';this.style.boxShadow=valid?'0 0 0 3px rgba(22,163,74,.12)':'0 0 0 3px rgba(239,68,68,.12)';});emailEl.addEventListener('focus',function(){this.style.borderColor='#2E75B6';this.style.boxShadow='0 0 0 3px rgba(46,117,182,.15)';});}
+  if(emailEl){
+    emailEl.addEventListener('blur',function(){const valid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());if(this.value.trim()===''){this.style.borderColor='';return;}this.style.borderColor=valid?'#16a34a':'#ef4444';this.style.boxShadow=valid?'0 0 0 3px rgba(22,163,74,.12)':'0 0 0 3px rgba(239,68,68,.12)';});
+    emailEl.addEventListener('focus',function(){this.style.borderColor='#2E75B6';this.style.boxShadow='0 0 0 3px rgba(46,117,182,.15)';});
+  }
 }
 
 async function submitContact(){
@@ -346,7 +350,6 @@ function dashboard(){
     </div>
   </header>
   <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
-    <!-- ETLs -->
     <h2 class="text-lg font-bold text-n9 mb-4">Documentações</h2>
     ${etls.length===0
       ?`<div class="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400 mb-6"><div class="text-4xl mb-3">📭</div><p class="text-sm">Nenhuma documentação disponível ainda.</p></div>`
@@ -359,7 +362,6 @@ function dashboard(){
           <div class="mt-4 text-xs text-n6 font-semibold">Ver documentação →</div>
         </div>`).join('')}
        </div>`}
-    <!-- Pacotes de Relatório -->
     ${relatorios.length>0?`
     <h2 class="text-lg font-bold text-n9 mb-4">Pacotes de Relatório</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -368,10 +370,7 @@ function dashboard(){
         <div class="text-3xl mb-3">📦</div>
         <h3 class="font-bold text-n9 text-sm leading-snug">${esc(r.name)}</h3>
         <p class="text-gray-500 text-xs mt-1.5 leading-relaxed">${esc(r.description||'')}</p>
-        <div class="mt-1 text-gray-400 text-xs">${r.fileName||''} ${r.fileSize?'· '+fmtBytes(r.fileSize):''}</div>
-        <a href="${esc(r.fileUrl||'#')}" target="_blank" class="mt-4 inline-flex items-center gap-1.5 text-xs text-n6 font-semibold hover:underline">
-          ⬇ Baixar arquivo
-        </a>
+        <a href="${esc(r.fileUrl||'#')}" target="_blank" class="mt-4 inline-flex items-center gap-1.5 text-xs text-n6 font-semibold hover:underline">⬇ Baixar arquivo</a>
       </div>`).join('')}
     </div>`:''}
   </main>
@@ -397,11 +396,7 @@ function viewer(){
       <p class="text-n2 text-xs font-bold uppercase tracking-wider px-3 mb-2">Conteúdo</p>
       ${pages.map((p,i)=>`<button onclick="goToPage(${i})" class="sitem w-full text-left text-xs px-3 py-2.5 rounded-lg text-n2 hover:bg-n6 hover:text-white transition-colors ${i===pi?'active':''}">${esc(p.title)}</button>`).join('')}
     </aside>
-    <main class="flex-1 overflow-y-auto">
-      <div class="max-w-3xl mx-auto px-8 py-7">
-        <div class="md">${page?md(page.content):'<p class="text-gray-400">Página não encontrada.</p>'}</div>
-      </div>
-    </main>
+    <main class="flex-1 overflow-y-auto"><div class="max-w-3xl mx-auto px-8 py-7"><div class="md">${page?md(page.content):'<p class="text-gray-400">Página não encontrada.</p>'}</div></div></main>
   </div>
 </div>`;}
 
@@ -452,7 +447,6 @@ async function loadContacts(){
     </div>`).join('')}</div>`;
   }catch(e){el.innerHTML=`<p class="text-red-500 text-sm">Erro ao carregar contatos.</p>`;}
 }
-
 async function markContactRead(id){try{await db.collection('contacts').doc(id).update({lido:true});loadContacts();}catch{toast('Erro ao atualizar.');}}
 
 /* ── ADMIN USERS ─────────────────────────────────────────────── */
@@ -462,8 +456,10 @@ function adminUsers(){return`
   ${S.allUsers.length===0?`<p class="text-gray-400 text-sm">Nenhum usuário encontrado.</p>`:
   `<div class="space-y-4">${S.allUsers.map(u=>`
   <div class="bg-white rounded-xl border border-gray-200 p-4">
-    <div class="flex items-start gap-4 justify-between flex-wrap mb-3">
-      <div><div class="flex items-center gap-2"><span class="font-bold text-n9 text-sm">${esc(u.name||'—')}</span>${u.isAdmin?`<span class="text-xs bg-n6 text-white px-2 py-0.5 rounded-full font-medium">Admin</span>`:''}</div><div class="text-gray-400 text-xs mt-0.5">${esc(u.email||'')}</div></div>
+    <div class="flex items-center gap-2 mb-3">
+      <span class="font-bold text-n9 text-sm">${esc(u.name||'—')}</span>
+      ${u.isAdmin?`<span class="text-xs bg-n6 text-white px-2 py-0.5 rounded-full font-medium">Admin</span>`:''}
+      <span class="text-gray-400 text-xs ml-1">${esc(u.email||'')}</span>
     </div>
     <p class="text-xs font-semibold text-gray-500 mb-2">📄 Acesso às ETLs</p>
     <div class="flex flex-wrap gap-2 mb-3">
@@ -479,31 +475,35 @@ function adminUsers(){return`
 </div>`;}
 
 /* ── ADMIN RELATORIOS ────────────────────────────────────────── */
-function adminRelatorios(){return`
+function adminRelatorios(){
+  const editing = S.editingRelatorio;
+  return`
 <div>
   <div class="flex items-center justify-between mb-5">
     <h2 class="text-lg font-bold text-n9">Pacotes de Relatório</h2>
+    ${!editing?`<button onclick="S.editingRelatorio={};render()" class="text-xs bg-n9 hover:bg-n6 text-white px-3 py-2 rounded-lg transition-colors font-semibold">+ Novo pacote</button>`:''}
   </div>
-  <!-- Formulário de upload -->
+
+  ${editing!==null&&editing!==undefined?`
+  <!-- Formulário de cadastro/edição -->
   <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-    <h3 class="text-sm font-bold text-n9 mb-4">Novo pacote</h3>
+    <h3 class="text-sm font-bold text-n9 mb-4">${editing.id?'Editar pacote':'Novo pacote'}</h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-      <div><label class="block text-xs font-semibold text-gray-600 mb-1">Nome do pacote *</label><input id="rel-nome" type="text" placeholder="Ex: Relatório de Rentabilidade" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" /></div>
-      <div><label class="block text-xs font-semibold text-gray-600 mb-1">Descrição</label><input id="rel-desc" type="text" placeholder="Breve descrição do conteúdo" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" /></div>
+      <div><label class="block text-xs font-semibold text-gray-600 mb-1">Nome do pacote *</label><input id="rel-nome" type="text" value="${esc(editing.name||'')}" placeholder="Ex: Relatório de Rentabilidade" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" /></div>
+      <div><label class="block text-xs font-semibold text-gray-600 mb-1">Descrição</label><input id="rel-desc" type="text" value="${esc(editing.description||'')}" placeholder="Breve descrição do conteúdo" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" /></div>
     </div>
     <div class="mb-4">
-      <label class="block text-xs font-semibold text-gray-600 mb-1">Arquivo *</label>
-      <input id="rel-file" type="file" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-n9 file:text-white hover:file:bg-n6 cursor-pointer" />
-      <p class="text-xs text-gray-400 mt-1">Aceita qualquer formato de arquivo</p>
-    </div>
-    <div id="rel-progress-wrap" class="hidden mb-3">
-      <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Enviando...</span><span id="rel-progress-pct">0%</span></div>
-      <div class="progress-bar"><div id="rel-progress-fill" class="progress-fill" style="width:0%"></div></div>
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Link do arquivo (Google Drive) *</label>
+      <input id="rel-url" type="url" value="${esc(editing.fileUrl||'')}" placeholder="https://drive.google.com/file/d/..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-n6" />
+      <p class="text-xs text-gray-400 mt-1">No Google Drive: clique com botão direito no arquivo → <strong>Compartilhar</strong> → <strong>Copiar link</strong>. Certifique-se de que o acesso está definido como <strong>"Qualquer pessoa com o link"</strong>.</p>
     </div>
     <div id="rel-err" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs mb-3"></div>
-    <button onclick="uploadRelatorio()" id="rel-btn" class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">⬆ Enviar arquivo</button>
-  </div>
-  <!-- Lista -->
+    <div class="flex gap-3">
+      <button onclick="saveRelatorio()" class="bg-n9 hover:bg-n6 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">Salvar</button>
+      <button onclick="S.editingRelatorio=null;render()" class="text-sm text-gray-500 hover:text-n9 px-3 py-2">Cancelar</button>
+    </div>
+  </div>`:''}
+
   ${S.relatorios.length===0
     ?`<div class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-400"><div class="text-4xl mb-3">📭</div><p class="text-sm">Nenhum pacote cadastrado ainda.</p></div>`
     :`<div class="space-y-3">${S.relatorios.map(r=>`
@@ -513,13 +513,14 @@ function adminRelatorios(){return`
           <span class="text-2xl">📦</span>
           <div>
             <div class="font-bold text-n9 text-sm">${esc(r.name)}</div>
-            <div class="text-gray-400 text-xs">${esc(r.description||'')}${r.fileName?' · '+esc(r.fileName):''}${r.fileSize?' · '+fmtBytes(r.fileSize):''}</div>
-            ${r.uploadedAt?`<div class="text-gray-400 text-xs">${new Date(r.uploadedAt.seconds*1000).toLocaleDateString('pt-BR')}</div>`:''}
+            <div class="text-gray-400 text-xs">${esc(r.description||'')}</div>
+            ${r.criadoEm?`<div class="text-gray-400 text-xs">${new Date(r.criadoEm.seconds*1000).toLocaleDateString('pt-BR')}</div>`:''}
           </div>
         </div>
         <div class="flex gap-2 shrink-0">
-          <a href="${esc(r.fileUrl||'#')}" target="_blank" class="text-xs border border-n6 text-n6 hover:bg-n6 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-medium">⬇ Baixar</a>
-          <button onclick="deleteRelatorio('${esc(r.id)}','${esc(r.storagePath||'')}')" class="text-xs border border-red-200 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors">🗑️</button>
+          <a href="${esc(r.fileUrl||'#')}" target="_blank" class="text-xs border border-n6 text-n6 hover:bg-n6 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-medium">⬇ Testar link</a>
+          <button onclick="S.editingRelatorio=${JSON.stringify(r).replace(/"/g,'&quot;')};render()" class="text-xs border border-gray-200 text-n9 hover:border-n6 hover:text-n6 px-3 py-1.5 rounded-lg transition-colors">✏️</button>
+          <button onclick="deleteRelatorio('${esc(r.id)}')" class="text-xs border border-red-200 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors">🗑️</button>
         </div>
       </div>
     </div>`).join('')}</div>`}
@@ -612,19 +613,19 @@ async function doRegister(){
 function doLogout(){auth.signOut().then(()=>setView('landing'));}
 function openEtl(i){S.currentEtl=S.etls[i];S.currentPage=0;setView('viewer');}
 function goToPage(i){S.currentPage=i;render();setTimeout(applyHighlight,80);}
-function backToDashboard(){S.editingEtl=null;S.editingPageIdx=null;setView('dashboard');}
+function backToDashboard(){S.editingEtl=null;S.editingPageIdx=null;S.editingRelatorio=null;setView('dashboard');}
 
 async function openAdmin(){
   setView('loading');
   try{
     [S.etls,S.allUsers,S.relatorios]=await Promise.all([loadAllEtls(),loadAllUsers(),loadAllRelatorios()]);
-    S.adminTab='contacts';S.editingEtl=null;S.editingPageIdx=null;
+    S.adminTab='contacts';S.editingEtl=null;S.editingPageIdx=null;S.editingRelatorio=null;
     setView('admin');setTimeout(loadContacts,100);
   }catch{toast('Erro ao carregar painel.');setView('dashboard');}
 }
 
 function setAdminTab(t){
-  S.adminTab=t;S.editingEtl=null;S.editingPageIdx=null;render();
+  S.adminTab=t;S.editingEtl=null;S.editingPageIdx=null;S.editingRelatorio=null;render();
   if(t==='contacts')setTimeout(loadContacts,100);
 }
 
@@ -637,71 +638,36 @@ async function toggleAccess(uid,itemId,tipo){
   catch{toast('Erro ao atualizar acesso.');}
 }
 
-// ── Upload de relatório ───────────────────────────────────────
-async function uploadRelatorio(){
+// ── Relatório CRUD ────────────────────────────────────────────
+async function saveRelatorio(){
   const nome=document.getElementById('rel-nome').value.trim();
   const desc=document.getElementById('rel-desc').value.trim();
-  const fileInput=document.getElementById('rel-file');
-  const file=fileInput.files[0];
+  const urlRaw=document.getElementById('rel-url').value.trim();
   const errEl=document.getElementById('rel-err');
   errEl.classList.add('hidden');
   if(!nome){errEl.textContent='Informe o nome do pacote.';errEl.classList.remove('hidden');return;}
-  if(!file){errEl.textContent='Selecione um arquivo.';errEl.classList.remove('hidden');return;}
-
-  const btn=document.getElementById('rel-btn');
-  const progressWrap=document.getElementById('rel-progress-wrap');
-  const progressFill=document.getElementById('rel-progress-fill');
-  const progressPct=document.getElementById('rel-progress-pct');
-  btn.disabled=true;btn.textContent='Enviando...';progressWrap.classList.remove('hidden');
-
+  if(!urlRaw){errEl.textContent='Informe o link do arquivo.';errEl.classList.remove('hidden');return;}
+  const fileUrl=normalizeDriveUrl(urlRaw);
   try{
-    const storagePath=`relatorios/${Date.now()}_${file.name}`;
-    const ref=storage.ref(storagePath);
-    const uploadTask=ref.put(file);
-
-    await new Promise((resolve,reject)=>{
-      uploadTask.on('state_changed',
-        snap=>{
-          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
-          progressFill.style.width=pct+'%';
-          progressPct.textContent=pct+'%';
-        },
-        reject,
-        resolve
-      );
-    });
-
-    const fileUrl=await ref.getDownloadURL();
-    const docRef=await db.collection('relatorios').add({
-      name:nome, description:desc,
-      fileName:file.name, fileSize:file.size,
-      storagePath, fileUrl,
-      uploadedAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    S.relatorios.unshift({id:docRef.id,name:nome,description:desc,fileName:file.name,fileSize:file.size,storagePath,fileUrl,uploadedAt:{seconds:Date.now()/1000}});
-    toast('Pacote enviado com sucesso!');
-    document.getElementById('rel-nome').value='';
-    document.getElementById('rel-desc').value='';
-    fileInput.value='';
-    render();
-  }catch(e){
-    errEl.textContent='Erro ao enviar: '+e.message;
-    errEl.classList.remove('hidden');
-  }finally{
-    btn.disabled=false;btn.textContent='⬆ Enviar arquivo';
-    progressWrap.classList.add('hidden');
-    progressFill.style.width='0%';
-  }
+    if(S.editingRelatorio?.id){
+      await db.collection('relatorios').doc(S.editingRelatorio.id).update({name:nome,description:desc,fileUrl});
+      const idx=S.relatorios.findIndex(x=>x.id===S.editingRelatorio.id);
+      if(idx>=0)Object.assign(S.relatorios[idx],{name:nome,description:desc,fileUrl});
+      toast('Pacote atualizado!');
+    } else {
+      const ref=await db.collection('relatorios').add({name:nome,description:desc,fileUrl,criadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+      S.relatorios.unshift({id:ref.id,name:nome,description:desc,fileUrl,criadoEm:{seconds:Date.now()/1000}});
+      toast('Pacote cadastrado!');
+    }
+    S.editingRelatorio=null;render();
+  }catch(e){errEl.textContent='Erro ao salvar: '+e.message;errEl.classList.remove('hidden');}
 }
 
-async function deleteRelatorio(id,storagePath){
-  if(!confirm('Excluir este pacote? O arquivo também será removido do Storage.'))return;
+async function deleteRelatorio(id){
+  if(!confirm('Excluir este pacote?'))return;
   try{
-    if(storagePath)await storage.ref(storagePath).delete().catch(()=>{});
     await db.collection('relatorios').doc(id).delete();
     S.relatorios=S.relatorios.filter(x=>x.id!==id);
-    // Remove acesso de todos os usuários
     for(const u of S.allUsers){
       if((u.relatorioAccess||[]).includes(id)){
         const next=u.relatorioAccess.filter(x=>x!==id);
@@ -710,7 +676,7 @@ async function deleteRelatorio(id,storagePath){
       }
     }
     toast('Pacote excluído.');render();
-  }catch{toast('Erro ao excluir pacote.');}
+  }catch{toast('Erro ao excluir.');}
 }
 
 // ── ETL CRUD ──────────────────────────────────────────────────
