@@ -606,13 +606,17 @@ async function doLogin(){
 }
 
 async function doRegister(){
-  const n=document.getElementById('rn').value.trim(),e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;
+  const n=document.getElementById('rn').value.trim();
+  const e=document.getElementById('re').value.trim();
+  const p=document.getElementById('rp').value;
   if(!n){showErr('err','Informe seu nome.');return;}
   try{
-    let isFirst=false;
-    try{const snap=await db.collection('users').limit(1).get();isFirst=snap.empty;}catch{isFirst=true;}
     const cred=await auth.createUserWithEmailAndPassword(e,p);
-    await db.collection('users').doc(cred.user.uid).set({name:n,email:e,isAdmin:isFirst,etlAccess:[],relatorioAccess:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('users').doc(cred.user.uid).set({
+      name:n, email:e, isAdmin:false,
+      etlAccess:[], relatorioAccess:[],
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
   }catch(err){showErr('err',firebaseErr(err.code));}
 }
 
