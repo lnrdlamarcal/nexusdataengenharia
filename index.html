@@ -594,9 +594,15 @@ function pageEditor(){
 function showErr(id,msg){const el=document.getElementById(id||'err');if(!el)return;el.textContent=msg;el.classList.remove('hidden');}
 
 async function doLogin(){
-  const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;
-  try{await auth.signInWithEmailAndPassword(e,p);}
-  catch(err){showErr('err',firebaseErr(err.code));}
+  const e=document.getElementById('le').value.trim();
+  const p=document.getElementById('lp').value;
+  if(!e||!p){showErr('err','Preencha e-mail e senha.');return;}
+  try{
+    await auth.signInWithEmailAndPassword(e,p);
+  }catch(err){
+    console.error('Login error:',err);
+    showErr('err',firebaseErr(err.code));
+  }
 }
 
 async function doRegister(){
@@ -740,12 +746,17 @@ function firebaseErr(code){
 
 /* ── AUTH LISTENER ───────────────────────────────────────────── */
 auth.onAuthStateChanged(async user=>{
-  if(!user){S.user=null;S.userData=null;if(!['login','register','landing'].includes(S.view))setView('landing');return;}
+  if(!user){
+    S.user=null;S.userData=null;
+    if(!['login','register','landing'].includes(S.view))setView('landing');
+    return;
+  }
   S.user=user;
   if(['dashboard','viewer','admin'].includes(S.view))return;
   setView('loading');
   try{
-    const userData=await loadUserData(user.uid);S.userData=userData;
+    const userData=await loadUserData(user.uid);
+    S.userData=userData;
     if(!userData){setView('wait');return;}
     if(userData.isAdmin){
       [S.etls,S.relatorios]=await Promise.all([loadAllEtls(),loadAllRelatorios()]);
@@ -756,7 +767,11 @@ auth.onAuthStateChanged(async user=>{
       ]);
     }
     setView((!userData.isAdmin&&!userData.etlAccess?.length&&!userData.relatorioAccess?.length)?'wait':'dashboard');
-  }catch(e){console.error(e);toast('Erro ao carregar dados.');setView('landing');}
+  }catch(e){
+    console.error('Auth state error:',e);
+    toast('Erro ao carregar: '+e.message);
+    setView('login');
+  }
 });
 
 render();
