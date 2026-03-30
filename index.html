@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 
+  <script src="firebase-config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -30,8 +31,6 @@
 
   <style>
     *, body { font-family: 'DM Sans', system-ui, sans-serif; }
-
-    /* Landing */
     .hero-bg {
       background: #1F3864;
       background-image:
@@ -53,8 +52,6 @@
     #lp-nav.scrolled { background:rgba(31,56,100,.97)!important; box-shadow:0 2px 20px rgba(0,0,0,.25); }
     .reveal { opacity:0; transform:translateY(22px); transition:opacity .55s ease,transform .55s ease; }
     .reveal.visible { opacity:1; transform:translateY(0); }
-
-    /* Portal */
     .md h1  { font-size:1.65em; font-weight:700; color:#1F3864; margin:.2em 0 .6em; border-bottom:2px solid #BDD7EE; padding-bottom:.3em; }
     .md h2  { font-size:1.2em; font-weight:700; color:#1F3864; margin:1.4em 0 .5em; }
     .md h3  { font-size:1em; font-weight:600; color:#2E75B6; margin:1.1em 0 .4em; }
@@ -90,12 +87,7 @@
 <div id="app"></div>
 <div id="toast"></div>
 <script>
-firebase.initializeApp({
-  apiKey:"AIzaSyCvi_PyfgghkBpkoE0vMKMgrF7V8bt7dBA",
-  authDomain:"nexus-755f9.firebaseapp.com",
-  projectId:"nexus-755f9",
-  appId:"1:131267406165:web:df1a1d4e52dfeecb9ea7dc",
-});
+firebase.initializeApp(FIREBASE_CONFIG);
 const auth=firebase.auth(), db=firebase.firestore();
 
 const S={user:null,userData:null,etls:[],allUsers:[],currentEtl:null,currentPage:0,
@@ -314,25 +306,21 @@ function landing(){return`
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Nome *</label>
-                <input id="c-nome" type="text" placeholder="Seu nome completo"
-                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+                <input id="c-nome" type="text" placeholder="Seu nome completo" class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Empresa</label>
-                <input id="c-empresa" type="text" placeholder="Nome da empresa"
-                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+                <input id="c-empresa" type="text" placeholder="Nome da empresa" class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">E-mail *</label>
-                <input id="c-email" type="email" placeholder="seu@email.com"
-                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+                <input id="c-email" type="email" placeholder="seu@email.com" class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">Telefone / WhatsApp</label>
-                <input id="c-tel" type="tel" placeholder="(00) 00000-0000"
-                  class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
+                <input id="c-tel" type="tel" placeholder="(00) 00000-0000" class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors" />
               </div>
             </div>
             <div class="mb-4">
@@ -349,11 +337,9 @@ function landing(){return`
             </div>
             <div class="mb-6">
               <label class="block text-xs font-semibold text-gray-600 mb-1.5">Descreva sua necessidade *</label>
-              <textarea id="c-msg" rows="4" placeholder="Descreva o que você precisa, qual sistema utiliza e qual problema deseja resolver..."
-                class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"></textarea>
+              <textarea id="c-msg" rows="4" placeholder="Descreva o que você precisa, qual sistema utiliza e qual problema deseja resolver..." class="lp-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"></textarea>
             </div>
-            <button id="c-btn" onclick="submitContact()"
-              class="w-full bg-n9 hover:bg-n6 text-white font-bold py-3.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+            <button id="c-btn" onclick="submitContact()" class="w-full bg-n9 hover:bg-n6 text-white font-bold py-3.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
               <span id="c-btn-txt">Enviar solicitação</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
@@ -391,37 +377,24 @@ function initLanding(){
     entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
   },{threshold:.1});
   document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-
-  // ── Máscara telefone ──────────────────────────────────────────
   const tel=document.getElementById('c-tel');
   if(tel){
-    tel.addEventListener('input',function(e){
+    tel.addEventListener('input',function(){
       let v=this.value.replace(/\D/g,'').slice(0,11);
       if(v.length===0){this.value='';return;}
-      if(v.length<=2)         this.value='('+v;
-      else if(v.length<=6)    this.value='('+v.slice(0,2)+') '+v.slice(2);
-      else if(v.length<=10)   this.value='('+v.slice(0,2)+') '+v.slice(2,6)+'-'+v.slice(6);
-      else                    this.value='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
-    });
-    tel.addEventListener('keydown',function(e){
-      if(e.key==='Backspace'){
-        // permite apagar normalmente
-        setTimeout(()=>{
-          let v=this.value.replace(/\D/g,'');
-          if(v.length===0)this.value='';
-        },0);
-      }
+      if(v.length<=2)this.value='('+v;
+      else if(v.length<=6)this.value='('+v.slice(0,2)+') '+v.slice(2);
+      else if(v.length<=10)this.value='('+v.slice(0,2)+') '+v.slice(2,6)+'-'+v.slice(6);
+      else this.value='('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
     });
   }
-
-  // ── Validação visual e-mail ───────────────────────────────────
   const emailEl=document.getElementById('c-email');
   if(emailEl){
     emailEl.addEventListener('blur',function(){
       const valid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());
-      if(this.value.trim()===''){ this.style.borderColor=''; return; }
-      this.style.borderColor = valid ? '#16a34a' : '#ef4444';
-      this.style.boxShadow   = valid ? '0 0 0 3px rgba(22,163,74,.12)' : '0 0 0 3px rgba(239,68,68,.12)';
+      if(this.value.trim()===''){this.style.borderColor='';return;}
+      this.style.borderColor=valid?'#16a34a':'#ef4444';
+      this.style.boxShadow=valid?'0 0 0 3px rgba(22,163,74,.12)':'0 0 0 3px rgba(239,68,68,.12)';
     });
     emailEl.addEventListener('focus',function(){
       this.style.borderColor='#2E75B6';
@@ -601,6 +574,11 @@ function admin(){return`
     <button onclick="backToDashboard()" class="hover:text-n2 text-sm font-medium transition-colors">← Voltar</button>
     <div class="w-px h-4 bg-n6"></div>
     <span class="font-bold">⚙️ Painel Admin</span>
+    <div class="ml-auto">
+      <a href="agenda.html" target="_blank" class="text-xs bg-white/15 hover:bg-white/25 border border-white/25 text-white px-3 py-1.5 rounded-lg transition-colors font-medium">
+        📋 Gestão de Serviços →
+      </a>
+    </div>
   </header>
   <div class="bg-white border-b border-gray-200 px-6 flex">
     ${['contacts','users','etls'].map(t=>`
