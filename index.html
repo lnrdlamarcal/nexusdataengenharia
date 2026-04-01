@@ -750,13 +750,10 @@ function firebaseErr(code){
 
 /* ── AUTH LISTENER ───────────────────────────────────────────── */
 auth.onAuthStateChanged(async user=>{
-  if(!user){
-    S.user=null;S.userData=null;
-    if(!['login','register','landing'].includes(S.view))setView('landing');
-    return;
-  }
+  if(!user){S.user=null;S.userData=null;if(!['login','register','landing'].includes(S.view))setView('landing');return;}
   S.user=user;
-  if(['dashboard','viewer','admin'].includes(S.view))return;
+  // Permite landing e login mesmo logado — usuário escolhe quando entrar
+  if(['landing','login','dashboard','viewer','admin'].includes(S.view))return;
   setView('loading');
   try{
     const userData=await loadUserData(user.uid);
