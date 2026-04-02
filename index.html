@@ -724,11 +724,19 @@ async function doLogin(){
 }
 
 async function doRegister(){
-  const n=document.getElementById('rn').value.trim(),e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;
+  const n=document.getElementById('rn').value.trim();
+  const e=document.getElementById('re').value.trim();
+  const p=document.getElementById('rp').value;
   if(!n){showErr('err','Informe seu nome.');return;}
   try{
     const cred=await auth.createUserWithEmailAndPassword(e,p);
-    await db.collection('users').doc(cred.user.uid).set({name:n,email:e,isAdmin:false,etlAccess:[],relatorioAccess:[],consultaAccess:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('users').doc(cred.user.uid).set({
+      name:n, email:e, isAdmin:false,
+      etlAccess:[], relatorioAccess:[], consultaAccess:[],
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Redireciona para tela de espera — admin precisa liberar acesso
+    setView('wait');
   }catch(err){showErr('err',firebaseErr(err.code));}
 }
 
