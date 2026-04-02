@@ -598,16 +598,15 @@ async function doLogin(){
   const p=document.getElementById('lp').value;
   if(!e||!p){showErr('err','Preencha e-mail e senha.');return;}
   try{
-    await auth.signInWithEmailAndPassword(e,p);
-    // Força o carregamento manual caso o listener não dispare
+    const cred = await auth.signInWithEmailAndPassword(e,p);
     setView('loading');
-    const userData=await loadUserData(auth.currentUser.uid);
-    S.userData=userData;
+    const userData = await loadUserData(cred.user.uid);
+    S.userData = userData;
     if(!userData){setView('wait');return;}
     if(userData.isAdmin){
-      [S.etls,S.relatorios]=await Promise.all([loadAllEtls(),loadAllRelatorios()]);
+      [S.etls,S.relatorios] = await Promise.all([loadAllEtls(),loadAllRelatorios()]);
     } else {
-      [S.etls,S.relatorios]=await Promise.all([
+      [S.etls,S.relatorios] = await Promise.all([
         loadAccessibleEtls(userData.etlAccess||[]),
         loadAccessibleRelatorios(userData.relatorioAccess||[])
       ]);
