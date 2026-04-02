@@ -697,32 +697,6 @@ function pageEditor(){
 /* ── ACTIONS ─────────────────────────────────────────────────── */
 function showErr(id,msg){const el=document.getElementById(id||'err');if(!el)return;el.textContent=msg;el.classList.remove('hidden');}
 
-async function doLogin(){
-  const e=document.getElementById('le').value.trim();
-  const p=document.getElementById('lp').value;
-  if(!e||!p){showErr('err','Preencha e-mail e senha.');return;}
-  try{
-    const cred=await auth.signInWithEmailAndPassword(e,p);
-    setView('loading');
-    const userData=await loadUserData(cred.user.uid);
-    S.userData=userData;
-    if(!userData){setView('wait');return;}
-    if(userData.isAdmin){
-      [S.etls,S.relatorios,S.consultas]=await Promise.all([loadAllEtls(),loadAllRelatorios(),loadAllConsultas()]);
-    } else {
-      [S.etls,S.relatorios,S.consultas]=await Promise.all([
-        loadAccessibleEtls(userData.etlAccess||[]),
-        loadAccessibleRelatorios(userData.relatorioAccess||[]),
-        loadAccessibleConsultas(userData.consultaAccess||[])
-      ]);
-    }
-    setView((!userData.isAdmin&&!userData.etlAccess?.length&&!userData.relatorioAccess?.length&&!userData.consultaAccess?.length)?'wait':'dashboard');
-  }catch(err){
-    console.error('Login error:',err);
-    showErr('err',firebaseErr(err.code));
-  }
-}
-
 async function doRegister(){
   const n=document.getElementById('rn').value.trim();
   const e=document.getElementById('re').value.trim();
@@ -735,9 +709,45 @@ async function doRegister(){
       etlAccess:[], relatorioAccess:[], consultaAccess:[],
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
-    // Redireciona para tela de espera — admin precisa liberar acesso
     setView('wait');
   }catch(err){showErr('err',firebaseErr(err.code));}
+}
+
+async function doLogin(){
+  const e=document.getElementById('le').value.trim();
+  const p=document.getElementById('lp').value;
+  if(!e||!p){showErr('err','Preencha e-mail e senha.');return;}
+  try{
+    const cred=await auth.signInWithEmailAndPassword(e,p);
+    setView('loading');
+    const userData=await loadUserData(cred.user.uid);
+    S.userData=userData;
+    if(!userData){setView('wait');return;}
+
+    const etlAccess      = userData.etlAccess      || [];
+    const relatorioAccess= userData.relatorioAccess|| [];
+    const consultaAccess = userData.consultaAccess || [];
+
+    if(userData.isAdmin){
+      [S.etls,S.relatorios,S.consultas]=await Promise.all([loadAllEtls(),loadAllRelatorios(),loadAllConsultas()]);
+    } else {
+      [S.etls,S.relatorios,S.consultas]=await Promise.all([
+        loadAccessibleEtls(etlAccess),
+        loadAccessibleRelatorios(relatorioAccess),
+        loadAccessibleConsultas(consultaAccess)
+      ]);
+    }
+
+    const temAcesso = userData.isAdmin
+      || etlAccess.length > 0
+      || relatorioAccess.length > 0
+      || consultaAccess.length > 0;
+
+    setView(temAcesso ? 'dashboard' : 'wait');
+  }catch(err){
+    console.error('Login error:',err);
+    showErr('err',firebaseErr(err.code));
+  }
 }
 
 function doLogout(){auth.signOut().then(()=>setView('landing'));}
