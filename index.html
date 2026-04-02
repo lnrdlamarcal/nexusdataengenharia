@@ -599,6 +599,20 @@ async function doLogin(){
   if(!e||!p){showErr('err','Preencha e-mail e senha.');return;}
   try{
     await auth.signInWithEmailAndPassword(e,p);
+    // Força o carregamento manual caso o listener não dispare
+    setView('loading');
+    const userData=await loadUserData(auth.currentUser.uid);
+    S.userData=userData;
+    if(!userData){setView('wait');return;}
+    if(userData.isAdmin){
+      [S.etls,S.relatorios]=await Promise.all([loadAllEtls(),loadAllRelatorios()]);
+    } else {
+      [S.etls,S.relatorios]=await Promise.all([
+        loadAccessibleEtls(userData.etlAccess||[]),
+        loadAccessibleRelatorios(userData.relatorioAccess||[])
+      ]);
+    }
+    setView((!userData.isAdmin&&!userData.etlAccess?.length&&!userData.relatorioAccess?.length)?'wait':'dashboard');
   }catch(err){
     console.error('Login error:',err);
     showErr('err',firebaseErr(err.code));
