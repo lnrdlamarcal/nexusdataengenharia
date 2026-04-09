@@ -116,10 +116,42 @@ function applyHighlight(){
   document.querySelectorAll('.md pre code').forEach(el=>hljs.highlightElement(el));
   document.querySelectorAll('.md pre').forEach(pre=>{
     if(pre.querySelector('.copy-btn'))return;
-    const btn=document.createElement('button');btn.className='copy-btn';btn.textContent='Copiar';
-    btn.onclick=()=>{const c=pre.querySelector('code');navigator.clipboard.writeText(c?c.innerText:pre.innerText).then(()=>{btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='Copiar',2000);});};
+    const btn=document.createElement('button');
+    btn.className='copy-btn';
+    btn.textContent='Copiar';
+    btn.onclick=()=>{
+      const c=pre.querySelector('code');
+      const texto=(c?c.innerText:pre.innerText).trimEnd();
+      if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(texto).then(()=>{
+          btn.textContent='✓ Copiado!';
+          setTimeout(()=>btn.textContent='Copiar',2000);
+        }).catch(()=>fallbackCopy(texto,btn));
+      } else {
+        fallbackCopy(texto,btn);
+      }
+    };
     pre.appendChild(btn);
   });
+}
+
+function fallbackCopy(texto,btn){
+  const ta=document.createElement('textarea');
+  ta.value=texto;
+  ta.style.position='fixed';
+  ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{
+    document.execCommand('copy');
+    btn.textContent='✓ Copiado!';
+    setTimeout(()=>btn.textContent='Copiar',2000);
+  }catch{
+    btn.textContent='Erro ao copiar';
+    setTimeout(()=>btn.textContent='Copiar',2000);
+  }
+  document.body.removeChild(ta);
 }
 
 // ── Firestore ops ─────────────────────────────────────────────
